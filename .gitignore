@@ -1,0 +1,7 @@
+
+Debug/*
+*.user
+.gitigno.swp
+moc_*
+*.o
+._.gitignore
