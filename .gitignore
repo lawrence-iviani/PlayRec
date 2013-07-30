@@ -1,5 +1,5 @@
-
-Debug/*
+build/*
+debug/*
 *.user
 .gitigno.swp
 moc_*
