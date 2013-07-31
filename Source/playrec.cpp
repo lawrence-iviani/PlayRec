@@ -154,7 +154,8 @@ void PlayRec::setPlaybackPosition(quint64 sample)
 void PlayRec::setPlaybackPosition(qreal timePosition)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
-    quint64 sample= static_cast<quint64> (timePosition/m_play->audioFormat().sampleRate());
+
+    quint64 sample= static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
     result=m_play->setPosition(sample);
     if (!result.status) {
         qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;

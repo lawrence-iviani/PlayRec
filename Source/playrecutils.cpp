@@ -222,3 +222,8 @@ const qreal PlayRecUtils::convertSampleToTime(const quint64& sample,const QAudio
 {
     return (static_cast<qreal> (sample))/(static_cast<qreal> (format.sampleRate()));
 }
+
+const quint64 PlayRecUtils::convertTimeToSample(const qreal &time, const QAudioFormat &format)
+{
+    return (static_cast<quint64> (time*(static_cast<qreal> (format.sampleRate()))));
+}

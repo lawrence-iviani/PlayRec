@@ -103,7 +103,8 @@ void MainWindow::playbackStatusHasChanged(int status) {
 
 void MainWindow::faderPositionHasChanged(int position)
 {
-    m_playrec.setPlaybackPosition( m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum())));
+    qreal pos=m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum()));
+    m_playrec.setPlaybackPosition(pos);
 }
 
 void MainWindow::pauseToggled() {

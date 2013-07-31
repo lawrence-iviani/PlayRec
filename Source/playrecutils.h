@@ -31,8 +31,11 @@ public:
     //Return the number of bytes respect to  sample and the format
     static const qint64 convertByteToSample(const qint64 &byte, const QAudioFormat& format);
 
-    //Return the time of this sample respect to the sample and the format
+    //Return the time of this sample respect to the format
     static const qreal convertSampleToTime(const quint64& sample,const QAudioFormat& format);
+
+    //Return the sample at this time respect to the format
+    static const quint64 convertTimeToSample(const qreal& time,const QAudioFormat& format);
 };
 
 #endif // PLAYRECUTILS_H
