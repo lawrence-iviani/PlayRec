@@ -34,6 +34,12 @@ private slots:
     void openNewPlaybackFile();
     void playbackStatusHasChanged(int status);
     void pauseToggled();
+
+    //Get the  playback time (sec.) form playrec and update the UI
+    void playbackPositionHasChanged(qreal time);
+
+    //Handle position user interaction
+    void faderPositionHasChanged(int position);
 };
 
 #endif // MAINWINDOW_H

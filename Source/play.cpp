@@ -5,7 +5,11 @@
 //-----------------------------------------------------------------------------
 Play::Play(QObject *parent)  :
     QObject(parent) ,
+    m_audioStream(0),
+    m_outputStream (0) ,
     m_audioOutput(0) ,
+    m_audioOutputBufferLength(Play::defaultBufferLen),//samples
+    m_previousBytePosition(0),
     m_status(PLAY_NOT_INIT),
     m_notifyInterval(Play::defaultNotifyInterval) //ms
 {
@@ -15,6 +19,28 @@ Play::Play(QObject *parent)  :
 Play::~Play()
 {
     resetDevice();
+}
+
+
+//-----------------------------------------------------------------------------
+// Public Methods
+//-----------------------------------------------------------------------------
+const quint64 Play::streamLength()
+{
+    if (m_audioStream && m_audioOutput)
+        return qMax(static_cast<qint64> (0),
+                    PlayRecUtils::convertByteToSample(m_audioStream->size()-WAVEFILE_HEADER,m_audioOutput->format()));
+    else
+        return 0;
+}
+
+const quint64 Play::position()
+{
+    if (m_audioStream && m_audioOutput)
+        return qMax(static_cast<qint64> (0),
+                    PlayRecUtils::convertByteToSample(m_audioStream->pos()-WAVEFILE_HEADER,m_audioOutput->format()));
+    else
+        return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -46,7 +72,33 @@ QString Play::internalPlaybackStateToString(const Play::PLAY_STATUS &state) {
 // Private  slots
 //-----------------------------------------------------------------------------
 void Play::notified() {
-    qDebug() << Q_FUNC_INFO << "Notifed!!";
+    if (!m_audioStream) {
+        qDebug() << Q_FUNC_INFO << "Notifed without a valid stream";
+        return;
+    }
+    if (!m_audioOutput) {
+        qDebug() << Q_FUNC_INFO << "Notifed without a valid audio output";
+        return;
+    }
+//-----TODO: this is only for debug. IT will be the stream that must provides this info
+qint64 _actualPos=m_audioStream->pos();
+qint64 _bufLen=_actualPos-m_previousBytePosition;
+if (_bufLen==0) {
+    qDebug() << Q_FUNC_INFO << "Notifed with no audio data to process";
+    return;
+}
+Q_ASSERT(_bufLen>=0);
+QByteArray _buffer= m_audioStream->peek(m_audioOutputBufferLength);
+const char * _data=_buffer.constData();
+PlayRec_structMeter _meter=PlayRecUtils::getAudioPeak(_data,_bufLen,m_audioOutput->format());
+
+quint64 sample=PlayRecUtils::convertByteToSample(m_previousBytePosition,m_audioOutput->format());
+//-----TODO END
+qDebug() << Q_FUNC_INFO << "Notifed, peak/rms are " << _meter.peak << "/" << _meter.rms << " @ byte=" << m_previousBytePosition <<  "sample=" << sample;
+    //emit meter
+    emit notifyMeters(sample,_meter);
+    //set byte position
+    setPreviousBytePosition(_actualPos);
 }
 
 void Play::audioStateChanged(QAudio::State state)
@@ -56,44 +108,49 @@ void Play::audioStateChanged(QAudio::State state)
              << " Audio Output status changed to "
              << PlayRecUtils::qAudioStateToString(state);
 
-    //check error
-    QAudio::Error error = m_audioOutput->error();
-    switch (error) {
-        case QAudio::NoError:
-            break;
-        case QAudio::OpenError:          
-        case QAudio::IOError:           
-        case QAudio::UnderrunError:           
-        case QAudio::FatalError:
-            qDebug() << Q_FUNC_INFO << "AudioOutput error: " << PlayRecUtils::decodeInternalAudioErrorToString(error);
-            reinit();
-            break;
-        default:
-            Q_ASSERT_X(0, Q_FUNC_INFO, "Unkwon internal error, should never been here!!!");
-            break;
+    //check error only if audiostream is valid and not at the end of the stream
+    if (m_audioStream && !m_audioStream->atEnd()) {
+        QAudio::Error error = m_audioOutput->error();
+        switch (error) {
+            case QAudio::NoError:
+                break;
+            case QAudio::OpenError:
+            case QAudio::IOError:
+            case QAudio::UnderrunError:
+            case QAudio::FatalError:
+                qDebug() << Q_FUNC_INFO << "AudioOutput error: " << PlayRecUtils::decodeInternalAudioErrorToString(error);
+                reinit();
+                break;
+            default:
+                Q_ASSERT_X(0, Q_FUNC_INFO, "Unkwon internal error, should never been here!!!");
+                break;
+        }
     }
-
     //check status consistency
     switch (state) {
         case QAudio::ActiveState:
             setInternalStatus(Play::PLAY_PLAY);
             qDebug() << Q_FUNC_INFO << "QAudio::ActiveState";
-//            if (m_status!=Play::PLAY_PLAY)
-//                Q_ASSERT_X(0, Q_FUNC_INFO, "Start to play but internal status is not consistent");
             break;
         case QAudio::SuspendedState:
             setInternalStatus(Play::PLAY_SUSPENDED);
             qDebug() << Q_FUNC_INFO << "QAudio::SuspendedState";
-//            if (m_status!=Play::PLAY_SUSPENDED)
-//                Q_ASSERT_X(0, Q_FUNC_INFO, "Suspended to play but internal status is not consistent");
             break;
         case QAudio::StoppedState:
-            setInternalStatus(Play::PLAY_READY);
             qDebug() << Q_FUNC_INFO << "QAudio::StoppedState";
+            stop();
+            setInternalStatus(Play::PLAY_READY);
             break;
         case QAudio::IdleState:
-            setInternalStatus(Play::PLAY_READY);
+            //If at the end of the stream, reset it
+            if (m_audioStream && m_audioStream->atEnd()) {
+                m_audioStream->reset();
+                setPreviousBytePosition(m_audioStream->pos());
+                m_audioOutput->reset();
+                qDebug() << Q_FUNC_INFO << "Reset Stream";
+            }
             qDebug() << Q_FUNC_INFO << "QAudio::IdleState";
+            setInternalStatus(Play::PLAY_READY);
             break;
         default:
             Q_ASSERT_X(0, Q_FUNC_INFO, "Unkwon internal status, should never been here!!!");
@@ -105,11 +162,11 @@ void Play::audioStateChanged(QAudio::State state)
              << PlayRecUtils::qAudioStateToString(state);
 }
 
-
 //-----------------------------------------------------------------------------
 // Public slots
 //-----------------------------------------------------------------------------
-const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &outputDevice, const QAudioFormat &format) {
+const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &outputDevice, const QAudioFormat &format)
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     Q_ASSERT_X(m_status==PLAY_NOT_INIT, Q_FUNC_INFO, "Internal status already init");
     Q_ASSERT_X(!m_audioOutput, Q_FUNC_INFO, "Audio device should be empty");
@@ -117,15 +174,25 @@ const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &
     //Check and assign format
     QAudioFormat outputFormat=QAudioFormat();
     if (format==outputFormat) //an empty (and invalid) audio format
+    {
         outputFormat=outputDevice.nearestFormat(format);
-    else
+        emit audioFormatChanged(outputFormat);
+    }
+    else {
         outputFormat=format;
+    }
 
     //opening IO audio output
     m_audioOutput = new QAudioOutput(outputDevice, outputFormat, this);
-    m_outputStreamInfo=outputDevice;
-    qDebug() << Q_FUNC_INFO << "Open " << outputDevice.deviceName() << " with format: " << PlayRecUtils::formatToString(outputFormat);
+    m_audioOutputInfo=outputDevice;
+    m_audioOutput->setBufferSize(m_audioOutputBufferLength);
     m_audioOutput->setNotifyInterval(m_notifyInterval);
+
+    qDebug() << Q_FUNC_INFO << "Open " << outputDevice.deviceName()
+             << " with format: " << PlayRecUtils::formatToString(outputFormat)
+             << "Buffer size" << m_notifyInterval << "Samples"
+             << "Notify interval " << m_notifyInterval << "ms";
+
     m_audioStream=audioStream;
     qDebug() << Q_FUNC_INFO << "Audio Output status at init is " << PlayRecUtils::qAudioStateToString(m_audioOutput->state());
 
@@ -137,11 +204,13 @@ const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &
     return  retval;
 }
 
-const PLAYREC_RETVAL Play::start() {
+const PLAYREC_RETVAL Play::start()
+{
     return start(0);
 }
 
-const PLAYREC_RETVAL Play::start(const quint64 startSample) {
+const PLAYREC_RETVAL Play::start(const quint64 startSample)
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
 
     QString  errMsg="";
@@ -161,7 +230,8 @@ const PLAYREC_RETVAL Play::start(const quint64 startSample) {
     //TODO: SKIPPING THE HEADER 48 bytes JUST FOR DEBUG,
     //EVERY STREAM MUST SKIP ITS HEADER. TODO!!!
     qDebug() << Q_FUNC_INFO << "SKIPPING 48 BYTES HEADER FOR DEBUG PURPOSE";
-    m_audioStream->read(48+startSample);
+    m_audioStream->read(WAVEFILE_HEADER+startSample);
+    setPreviousBytePosition(WAVEFILE_HEADER+startSample);
     //END TODO
             m_audioOutput->start(m_audioStream);
             errMsg=PlayRecUtils::decodeInternalAudioErrorToString(m_audioOutput->error());
@@ -183,7 +253,8 @@ const PLAYREC_RETVAL Play::start(const quint64 startSample) {
     return retval;
 }
 
-const PLAYREC_RETVAL Play::stop() {
+const PLAYREC_RETVAL Play::stop()
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
 
     QString  errMsg="";
@@ -193,6 +264,7 @@ const PLAYREC_RETVAL Play::stop() {
             break;
         case PLAY_SUSPENDED:
         case PLAY_PLAY:
+        case PLAY_READY:
             Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init before stopping or unpause!!");
             Q_ASSERT_X(m_audioStream, Q_FUNC_INFO, "Audio stream must be init before stopping or unpause!!!");
             m_audioOutput->stop();
@@ -204,10 +276,11 @@ const PLAYREC_RETVAL Play::stop() {
                 break;
             }         
             reinit();
+            setPreviousBytePosition(0);
             break;
-        case PLAY_READY:
-            SET_PLAYREC_RETVAL(retval,PLAY_ALREADY_STOPPED,"Internal status not in execution");
-            break;
+        // case PLAY_READY:
+         //   SET_PLAYREC_RETVAL(retval,PLAY_ALREADY_STOPPED,"Internal status not in execution");
+         //   break;
         default:
             SET_PLAYREC_RETVAL(retval,PLAY_FAIL,"Unknown status, can''t stop");
             break;
@@ -216,7 +289,8 @@ const PLAYREC_RETVAL Play::stop() {
     return retval;
 }
 
-const PLAYREC_RETVAL Play::resetDevice() {
+const PLAYREC_RETVAL Play::resetDevice()
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     if (m_status!=PLAY_NOT_INIT) {
         Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init before reset");
@@ -225,13 +299,15 @@ const PLAYREC_RETVAL Play::resetDevice() {
         QCoreApplication::instance()->processEvents();
         delete m_audioOutput;
         m_audioOutput=NULL;
-        m_outputStreamInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
+        m_audioOutputInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
         setInternalStatus(Play::PLAY_NOT_INIT);
+        setPreviousBytePosition(0);
     }  else  SET_PLAYREC_RETVAL(retval,PLAY_AUDIO_OUTPUT_NOT_READY,"Internal status not ready");
     return retval;
 }
 
-const PLAYREC_RETVAL Play::pause() {
+const PLAYREC_RETVAL Play::pause()
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     QString  errMsg="";
     switch (m_status) {
@@ -260,7 +336,8 @@ const PLAYREC_RETVAL Play::pause() {
     return retval;
 }
 
-const PLAYREC_RETVAL Play::unpause() {
+const PLAYREC_RETVAL Play::unpause()
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     QString  errMsg="";
     switch (m_status) {
@@ -289,31 +366,52 @@ const PLAYREC_RETVAL Play::unpause() {
     return retval;
 }
 
-const PLAYREC_RETVAL Play::setPosition(const quint64 sample) {
+const PLAYREC_RETVAL Play::setPosition(const quint64 sample)
+{
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     if (m_status!=PLAY_NOT_INIT) {
         Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init");
+        if (m_audioStream->isOpen()) {
+            quint64 bytesPosition=qMin(PlayRecUtils::convertSampleToByte(sample,m_audioOutput->format())+WAVEFILE_HEADER,m_audioStream->size() );
+            bool retval=m_audioStream->seek(bytesPosition);
+            if (!retval)
+                qDebug() << Q_FUNC_INFO << "can''t move to sample "<< sample <<" (bytes/size "<< bytesPosition << "/ "<< m_audioStream->size() <<")";
+            else setPreviousBytePosition(m_audioStream->pos());
+        }
         //TODO set position base on the sample
       //  emit positionChanged(sample);
     }  else  SET_PLAYREC_RETVAL(retval,PLAY_AUDIO_OUTPUT_NOT_READY,"Internal status not ready");
-
     return retval;
 }
 
 //-----------------------------------------------------------------------------
 // Private
 //-----------------------------------------------------------------------------
-inline void Play::setInternalStatus(PLAY_STATUS newStatus) {
+inline void Play::setInternalStatus(PLAY_STATUS newStatus)
+{
     if (newStatus!=m_status) {
         m_status=newStatus;
         emit statusChanged( static_cast<int>(m_status) );
     }
 }
 
-const PLAYREC_RETVAL Play::reinit() {
+inline void Play::setPreviousBytePosition(qint64 byte)
+{
+    if (!m_audioOutput)
+        emit positionChanged(0);
+    else
+        if (m_previousBytePosition!=byte) {
+            m_previousBytePosition=( byte >= 0 ?  byte : 0);
+            emit positionChanged(PlayRecUtils::convertByteToSample(m_previousBytePosition,m_audioOutput->format()));
+        }
+}
+
+
+const PLAYREC_RETVAL Play::reinit()
+{
     qDebug() << Q_FUNC_INFO << "Reinit AudioDevice";
     QIODevice *audioStream=m_audioStream;
-    QAudioDeviceInfo outputDeviceInfo=m_outputStreamInfo;
+    QAudioDeviceInfo outputDeviceInfo=m_audioOutputInfo;
     QAudioFormat format=m_audioOutput->format();
     resetDevice();
     return init(audioStream,outputDeviceInfo,format);

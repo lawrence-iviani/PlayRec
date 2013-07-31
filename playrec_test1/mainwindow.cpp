@@ -42,13 +42,19 @@ void MainWindow::connectSignals() {
     connect(ui->pushButtonStop,SIGNAL(pressed()),&m_playrec,SLOT(stop()));
     connect(ui->pushButtonPause,SIGNAL(pressed()),this,SLOT(pauseToggled()));
     connect(ui->pushButtonResetALL,SIGNAL(pressed()),&m_playrec,SLOT(resetAllStream()));
+    connect(&m_playrec,SIGNAL(playbackPositionChanged(qreal)),this,SLOT(playbackPositionHasChanged(qreal)));
+    connect(ui->sliderStreamPosition,SIGNAL(sliderMoved(int)),this,SLOT(faderPositionHasChanged(int)));
 
     //connect playrec system to mainwainwindow
     connect(&m_playrec,SIGNAL(playbackStatusChanged(int)),this,SLOT(playbackStatusHasChanged(int)));
-
 }
 
 //PRIVATE SLOTS
+void MainWindow::playbackPositionHasChanged(qreal time) {
+    int position=static_cast<int>(ui->sliderStreamPosition->maximum()*time/m_playrec.playbackTimeLength());
+    ui->sliderStreamPosition->setValue(position);
+}
+
 void MainWindow::comboBoxPlaybackHasChanged(QString namePBDev) {
     qDebug() << Q_FUNC_INFO << "DO NOTHING";
 }
@@ -64,8 +70,9 @@ void MainWindow::openNewPlaybackFile() {
     bool _isOpen=m_playbckFile.open(QIODevice::ReadOnly);
 
     if ( _isOpen) {
-        m_playbckFile.seek(48); //Length of the wav header
+        //m_playbckFile.seek(48); //Length of the wav header
         m_playrec.setPlaybackStream(&m_playbckFile);
+        ui->sliderStreamPosition->setRange( 0,static_cast<int>(m_playrec.playbackTimeLength() ));
     } else  {
         qDebug() << Q_FUNC_INFO << "Can''t open file:" << fileName;
     }
@@ -92,6 +99,11 @@ void MainWindow::playbackStatusHasChanged(int status) {
     default:
         qDebug() << Q_FUNC_INFO << "unkwnon status";
     }
+}
+
+void MainWindow::faderPositionHasChanged(int position)
+{
+    m_playrec.setPlaybackPosition( m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum())));
 }
 
 void MainWindow::pauseToggled() {

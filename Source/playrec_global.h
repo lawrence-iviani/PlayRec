@@ -32,6 +32,14 @@
     if(!connect(source, signal, receiver, slot)) \
         qt_assert_x(Q_FUNC_INFO, "CHECKED_CONNECT failed", __FILE__, __LINE__);
 
+//-----------------------------------------------------------------------------
+// Generic meter struct
+//-----------------------------------------------------------------------------
+typedef struct {
+    qreal peak;
+    qreal rms;
+} PlayRec_structMeter;
+
 
 //-----------------------------------------------------------------------------
 // Return Value Stuff

@@ -4,6 +4,9 @@
 #include  "playrec_global.h"
 #include "playrecutils.h"
 
+//THIS IS AS FIRST DEVEL. THE HEADER WILL BE RETURNED BY THE STREAM ITSELF!!
+#define WAVEFILE_HEADER 48 //the number of bytes of a wavfile
+
 /**
  * @brief The Play class allows to reproduce a byte stream from any QIODevice. This class simplify the manegment of the sound card,
  * is always possible change the sound card without loosing information of the stream and viceversa. Also it's possibile change the format of the output card
@@ -13,14 +16,23 @@ class Play : public QObject
 {
     Q_OBJECT
     Q_ENUMS(PLAY_STATUS)
-    Q_PROPERTY(int status READ status  NOTIFY statusChanged)
+ //   Q_PROPERTY(int status READ status  NOTIFY statusChanged)
+ //   Q_PROPERTY(QAudioFormat audioFormat READ audioFormat WRITE changeAudioFormat NOTIFY audioFormatChanged)
 
 public:
     Play(QObject* parent=0);
     virtual ~Play();
 
-    int status() {return m_status;}
-    quint64 position() {return 0;} //TODO
+    const int status() {return m_status;}
+    const quint64 position();
+    const QAudioFormat audioFormat() {return (m_audioOutput ? m_audioOutput->format() : QAudioFormat());}
+
+    /**
+     * @brief streamLength The stream length (if set) in samples
+     * @return Number of samples
+     */
+    const quint64 streamLength();
+
 
     typedef enum {
         PLAY_NOT_INIT = 0,
@@ -35,7 +47,9 @@ public:
     /**
      * @brief defaultNotifyInterval The default interval of play time
      */
-    static const int defaultNotifyInterval = 50; //ms
+    static const int defaultNotifyInterval = 100; //ms
+    static const int defaultBufferLen = 32768; //Samples
+
 public slots:
     //NOTE Audiostream dev'essere impacchettato in un vettore tipo QVector<QIODevice&>, in quanto devo suonare/registrare un numero multiplo di canali.
     // deve quindi essere modificato anche il numero
@@ -52,9 +66,10 @@ public slots:
     const PLAYREC_RETVAL setPosition(const quint64 sample);
 
 signals:
-    void notifyMeters(quint64 lastSamplePosition, qreal peak, qreal rms);
+    void notifyMeters(quint64 lastSamplePosition, PlayRec_structMeter meter);
     void statusChanged(int newStatus);
-    void positionChanged(quint64 lastSamplePosition);
+    void positionChanged(quint64 samplePosition);
+    void audioFormatChanged(QAudioFormat format);
 
 private:
     /**
@@ -65,7 +80,7 @@ private:
     /**
      * @brief m_outputStream the pointer to the output stream provided by the sound system
      */
-    QIODevice *m_outputStream;
+    QIODevice *m_outputStream; //only in push mode!! For now I am using pull mode
 
     /**
      * @brief m_audioOutput the output audio device where play the stream
@@ -73,9 +88,19 @@ private:
     QAudioOutput *m_audioOutput;
 
     /**
-     * @brief m_outputStreamInfo The Information associated to the m_audioOutput selected
+     * @brief m_audioOutputInfo The Information associated to the m_audioOutput selected
      */
-    QAudioDeviceInfo m_outputStreamInfo;
+    QAudioDeviceInfo m_audioOutputInfo;
+
+    /**
+     * @brief m_audioOutputBufferLength The length of the audio buffer length in sample (see QAudioOutput::setBufferSize())
+     */
+    quint64 m_audioOutputBufferLength;
+
+    /**
+     * @brief m_previousPosition An indication of the last position read in samples
+     */
+    quint64 m_previousBytePosition;
 
     /**
      * @brief m_status the internal status
@@ -83,7 +108,7 @@ private:
     PLAY_STATUS m_status;
 
     /**
-     * @brief m_notifyInterval The notification interval of played stream (see QAudioOutput::setNotifyInterval())
+     * @brief m_notifyInterval The notification interval of played stream in ms (see QAudioOutput::setNotifyInterval())
      */
     int m_notifyInterval;
 
@@ -92,6 +117,12 @@ private:
      * @param newStatus The new status to be set
      */
     void setInternalStatus(PLAY_STATUS newStatus);
+
+    /**
+     * @brief setPreviousBytePosition An utility to set the variable m_previousBytePosition, it emits also signal that the position has been changed.
+     * @param byte The position in byte
+     */
+    void setPreviousBytePosition(qint64 byte);
 
     /**
      * @brief reinit reset and reinit with the previous audio device. Used when an internal error to the underlayer (IO AUDIO) happen

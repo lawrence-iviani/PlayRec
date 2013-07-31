@@ -15,6 +15,7 @@ PlayRec::PlayRec(QObject *parent) :
     m_play=new Play(parent);
 
     //m_rec=new Rec(parent);
+    connectSignals();
 }
 
 PlayRec::~PlayRec()
@@ -24,9 +25,28 @@ PlayRec::~PlayRec()
 }
 
 //-----------------------------------------------------------------------------
+// Private methods
+//-----------------------------------------------------------------------------
+void PlayRec::connectSignals()
+{
+    //connect playback position change, a private slot convert sample in time and re-emit the signal
+    connect(m_play,SIGNAL(positionChanged(quint64)),this,SLOT(playbackPositionHasChanged(quint64)));
+
+    //connect playback status,Signal2Signal
+    connect(m_play,SIGNAL(statusChanged(int)),this,SIGNAL(playbackStatusChanged(int)));
+}
+
+
+//-----------------------------------------------------------------------------
+// Public methods
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // Public slots
 //-----------------------------------------------------------------------------
-void PlayRec::start() {
+void PlayRec::start()
+{
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
@@ -46,7 +66,8 @@ void PlayRec::start() {
 
 }
 
-void PlayRec::stop() {
+void PlayRec::stop()
+{
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
@@ -66,7 +87,8 @@ void PlayRec::stop() {
 
 }
 
-void PlayRec::pause(bool pause) {
+void PlayRec::pause(bool pause)
+{
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
@@ -98,7 +120,8 @@ void PlayRec::resetPlaybackStream() {
         qDebug() << Q_FUNC_INFO << " operation error resetting playback," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
 }
 
-void PlayRec::setPlaybackStream(QIODevice * stream) {
+void PlayRec::setPlaybackStream(QIODevice * stream)
+{
     //init playback
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     if (m_play) {
@@ -107,10 +130,11 @@ void PlayRec::setPlaybackStream(QIODevice * stream) {
             qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
         }
         disconnect(m_play,SIGNAL(statusChanged(int)),this,SIGNAL(playbackStatusChanged(int)));
+        disconnect(m_play,SIGNAL(positionChanged(quint64)),this,SIGNAL(playbackPositionChanged(quint64)));
         delete m_play;
     }
     m_play=new Play(this);
-    connect(m_play,SIGNAL(statusChanged(int)),this,SIGNAL(playbackStatusChanged(int)));
+    connectSignals();
     result=m_play->init(stream);
     if (!result.status) {
         qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
@@ -118,10 +142,30 @@ void PlayRec::setPlaybackStream(QIODevice * stream) {
     }
 }
 
+void PlayRec::setPlaybackPosition(quint64 sample)
+{
+    PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
+    result=m_play->setPosition(sample);
+    if (!result.status) {
+        qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    }
+}
+
+void PlayRec::setPlaybackPosition(qreal timePosition)
+{
+    PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
+    quint64 sample= static_cast<quint64> (timePosition/m_play->audioFormat().sampleRate());
+    result=m_play->setPosition(sample);
+    if (!result.status) {
+        qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // Public static methods
 //-----------------------------------------------------------------------------
-QMap<QString, QAudioDeviceInfo> PlayRec::availablePlaybackDevices() {
+QMap<QString, QAudioDeviceInfo> PlayRec::availablePlaybackDevices()
+{
     QMap<QString, QAudioDeviceInfo> retval;
     foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
         retval.insert(deviceInfo.deviceName(),deviceInfo);
@@ -129,7 +173,8 @@ QMap<QString, QAudioDeviceInfo> PlayRec::availablePlaybackDevices() {
     return retval;
 }
 
-QMap<QString, QAudioDeviceInfo> PlayRec::availableRecordingDevices() {
+QMap<QString, QAudioDeviceInfo> PlayRec::availableRecordingDevices()
+{
     QMap<QString, QAudioDeviceInfo> retval;
     foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
         retval.insert(deviceInfo.deviceName(),deviceInfo);
@@ -138,5 +183,9 @@ QMap<QString, QAudioDeviceInfo> PlayRec::availableRecordingDevices() {
 }
 
 //-----------------------------------------------------------------------------
-// Public methods
+// Private slots
 //-----------------------------------------------------------------------------
+void PlayRec::playbackPositionHasChanged(quint64 sample) {
+    //Convert a sample in a time and emit signal
+    emit playbackPositionChanged(PlayRecUtils::convertSampleToTime(sample,m_play->audioFormat()));
+}

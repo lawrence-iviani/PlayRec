@@ -21,6 +21,7 @@ FORMS    += playrec_test1/mainwindow.ui
 
 INCLUDEPATH += $$PWD/source
 
+QMAKE_CLEAN += *.o *.dll *.so *.a *.dylib *.app
 
 CONFIG(debug, debug|release) {
     DESTDIR = $$PWD/build/debug

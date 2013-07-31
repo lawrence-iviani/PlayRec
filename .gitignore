@@ -5,3 +5,7 @@ debug/*
 moc_*
 *.o
 ._.gitignore
+
+Makefile
+
+ui_mainwindow.h
