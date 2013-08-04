@@ -75,17 +75,17 @@ private:
     /**
      * @brief m_audioStream the stream (file, etc) that must be reproducted (not owned).
      */
-    QIODevice *m_audioStream; // not owned
+    QPointer<QIODevice> m_audioStream; // not owned
 
     /**
      * @brief m_outputStream the pointer to the output stream provided by the sound system
      */
-    QIODevice *m_outputStream; //only in push mode!! For now I am using pull mode
+    QPointer<QIODevice>  m_outputStream; //only in push mode!! For now I am using pull mode
 
     /**
      * @brief m_audioOutput the output audio device where play the stream
      */
-    QAudioOutput *m_audioOutput;
+    QPointer<QAudioOutput> m_audioOutput;
 
     /**
      * @brief m_audioOutputInfo The Information associated to the m_audioOutput selected

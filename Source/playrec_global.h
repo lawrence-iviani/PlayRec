@@ -9,6 +9,7 @@
 #include <QIODevice>
 #include <QAudioOutput>
 #include <QMap>
+#include <QPointer>
 
 #if defined(PLAYREC_LIBRARY)
 #  define PLAYRECSHARED_EXPORT Q_DECL_EXPORT
