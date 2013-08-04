@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pauseSelect(false)
 {
     ui->setupUi(this);
+    ui->LabelStatus->setText(Play::internalPlaybackStateToString(Play::PLAY_NOT_INIT));
     setUILayout();
     populateComboBoxes();
     connectSignals();
@@ -82,22 +83,27 @@ void MainWindow::playbackStatusHasChanged(int status) {
     switch(status) {
     case Play::PLAY_NOT_INIT:
         ui->pushButtonPause->setText("pause");
+        ui->LabelStatus->setText(Play::internalPlaybackStateToString(Play::PLAY_NOT_INIT));
         m_pauseSelect=false;
         break;
     case Play::PLAY_PLAY:
         ui->pushButtonPause->setText("pause");
+        ui->LabelStatus->setText(Play::internalPlaybackStateToString(Play::PLAY_PLAY));
         m_pauseSelect=false;
         break;
     case Play::PLAY_READY:
         ui->pushButtonPause->setText("pause");
+        ui->LabelStatus->setText(Play::internalPlaybackStateToString(Play::PLAY_READY));
         m_pauseSelect=false;
         break;
     case Play::PLAY_SUSPENDED:
         ui->pushButtonPause->setText("unpause");
+        ui->LabelStatus->setText(Play::internalPlaybackStateToString(Play::PLAY_SUSPENDED));
         m_pauseSelect=true;
         break;
     default:
         qDebug() << Q_FUNC_INFO << "unkwnon status";
+        ui->LabelStatus->setText("Unknown status");
     }
 }
 
