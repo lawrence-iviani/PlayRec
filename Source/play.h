@@ -62,7 +62,7 @@ public slots:
     const PLAYREC_RETVAL unpause();
     const PLAYREC_RETVAL changeAudioInterface( QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat()) {return PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");}//TODO
     const PLAYREC_RETVAL changeAudioFormat(const QAudioFormat &format = QAudioFormat()) {return  PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");} //TODO
-    const PLAYREC_RETVAL changeStreamOutput(const QIODevice &outputStream) {return  PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");} //TODO
+    const PLAYREC_RETVAL changeAudioStream(QIODevice *playbackOutputStream);
     const PLAYREC_RETVAL setPosition(const quint64 sample);
 
 signals:
@@ -70,6 +70,7 @@ signals:
     void statusChanged(int newStatus);
     void positionChanged(quint64 samplePosition);
     void audioFormatChanged(QAudioFormat format);
+    void audioStreamChanged(); //Some information about the format
 
 private:
     /**
@@ -80,7 +81,7 @@ private:
     /**
      * @brief m_outputStream the pointer to the output stream provided by the sound system
      */
-    QPointer<QIODevice>  m_outputStream; //only in push mode!! For now I am using pull mode
+    QPointer<QIODevice>  m_audioOutputStream; //only in push mode!! For now I am using pull mode
 
     /**
      * @brief m_audioOutput the output audio device where play the stream
@@ -117,6 +118,12 @@ private:
      * @param newStatus The new status to be set
      */
     void setInternalStatus(PLAY_STATUS newStatus);
+
+    /**
+     * @brief Play::setAudioStream An utility to set a new audio stream, emit signals
+     * @param audioStream
+     */
+    inline void setAudioStream(QIODevice* audioStream);
 
     /**
      * @brief setPreviousBytePosition An utility to set the variable m_previousBytePosition, it emits also signal that the position has been changed.

@@ -125,21 +125,24 @@ void PlayRec::setPlaybackStream(QIODevice * stream)
     //init playback
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     if (m_play) {
-        result=m_play->resetDevice();
+      //  result=m_play->resetDevice();
+        result=m_play->changeAudioStream(stream);
         if (!result.status) {
             qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
         }
-        disconnect(m_play,SIGNAL(statusChanged(int)),this,SIGNAL(playbackStatusChanged(int)));
-        disconnect(m_play,SIGNAL(positionChanged(quint64)),this,SIGNAL(playbackPositionChanged(quint64)));
-        delete m_play;
+       // disconnect(m_play,SIGNAL(statusChanged(int)),this,SIGNAL(playbackStatusChanged(int)));
+       // disconnect(m_play,SIGNAL(positionChanged(quint64)),this,SIGNAL(playbackPositionChanged(quint64)));
+       // delete m_play;
+    } else {
+        m_play=new Play(this);
+        connectSignals();
+        result=m_play->init(stream);
+        if (!result.status) {
+            qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+          //  delete m_play;
+        }
     }
-    m_play=new Play(this);
-    connectSignals();
-    result=m_play->init(stream);
-    if (!result.status) {
-        qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-        delete m_play;
-    }
+
 }
 
 void PlayRec::setPlaybackPosition(quint64 sample)

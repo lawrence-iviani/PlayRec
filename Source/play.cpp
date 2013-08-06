@@ -6,7 +6,7 @@
 Play::Play(QObject *parent)  :
     QObject(parent) ,
     m_audioStream(0),
-    m_outputStream (0) ,
+    m_audioOutputStream (0) ,
     m_audioOutput(0) ,
     m_audioOutputBufferLength(Play::defaultBufferLen),//samples
     m_previousBytePosition(0),
@@ -196,7 +196,8 @@ const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &
              << "Buffer size" << m_notifyInterval << "Samples"
              << "Notify interval " << m_notifyInterval << "ms";
 
-    m_audioStream=audioStream;
+    setAudioStream(audioStream);
+
     qDebug() << Q_FUNC_INFO << "Audio Output status at init is " << PlayRecUtils::qAudioStateToString(m_audioOutput->state());
 
     //connect signal from m_audioOutput
@@ -388,6 +389,30 @@ const PLAYREC_RETVAL Play::setPosition(const quint64 sample)
     return retval;
 }
 
+const PLAYREC_RETVAL Play::changeAudioStream(QIODevice *playbackOutputStream) {
+    PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
+
+    if (m_status==PLAY_NOT_INIT) {
+        retval=init(playbackOutputStream);
+    } else {
+        Q_ASSERT_X(!m_audioOutput.isNull(), Q_FUNC_INFO, "Audio device must be init");
+        QAudioDeviceInfo outputDeviceInfo=m_audioOutputInfo;
+        QAudioFormat format=m_audioOutput.data()->format();
+        retval=stop();
+        if (!retval.status) {
+            qDebug() << Q_FUNC_INFO << "Stop error " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
+            //return ???
+        }
+        retval=resetDevice();
+        if (!retval.status) {
+            qDebug() << Q_FUNC_INFO << "Reset error " << PlayRecUtils::playrecReturnValueToString(retval.status);
+            //return ???
+        }
+        retval=init(playbackOutputStream,outputDeviceInfo,format);
+    }
+    return retval;
+}
+
 //-----------------------------------------------------------------------------
 // Private
 //-----------------------------------------------------------------------------
@@ -410,6 +435,13 @@ inline void Play::setPreviousBytePosition(qint64 byte)
         }
 }
 
+inline void Play::setAudioStream(QIODevice* audioStream)
+{
+    if (m_audioStream!=audioStream)  {
+        emit audioStreamChanged();
+        m_audioStream=audioStream;
+    }
+}
 
 const PLAYREC_RETVAL Play::reinit()
 {
