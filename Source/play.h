@@ -70,7 +70,7 @@ signals:
     void statusChanged(int newStatus);
     void positionChanged(quint64 samplePosition);
     void audioFormatChanged(QAudioFormat format);
-    void audioStreamChanged(); //Some information about the format
+    void audioStreamChanged(QIODevice * stream); //Some information about the format
 
 private:
     /**

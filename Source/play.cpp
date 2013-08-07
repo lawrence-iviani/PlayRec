@@ -271,20 +271,17 @@ const PLAYREC_RETVAL Play::stop()
         case PLAY_READY:
             Q_ASSERT_X(!m_audioOutput.isNull(), Q_FUNC_INFO, "Audio device must be init before stopping or unpause!!");
             Q_ASSERT_X(!m_audioStream.isNull(), Q_FUNC_INFO, "Audio stream must be init before stopping or unpause!!!");
-            m_audioOutput.data()->stop();
-            m_audioStream.data()->reset();
-            QCoreApplication::instance()->processEvents();
-            errMsg=PlayRecUtils::decodeInternalAudioErrorToString(m_audioOutput.data()->error());
-            if (!errMsg.isEmpty()) {
-                qDebug() << Q_FUNC_INFO <<"Error stopping " << errMsg;
-                break;
-            }         
+           // m_audioOutput.data()->stop();
+        //    QCoreApplication::instance()->processEvents();
+        //    errMsg=PlayRecUtils::decodeInternalAudioErrorToString(m_audioOutput.data()->error());
+        //    if (!errMsg.isEmpty()) {
+        //        qDebug() << Q_FUNC_INFO <<"Error stopping " << errMsg;
+        //        break;
+         //   }
             reinit();
+            m_audioStream.data()->reset();
             setPreviousBytePosition(0);
             break;
-        // case PLAY_READY:
-         //   SET_PLAYREC_RETVAL(retval,PLAY_ALREADY_STOPPED,"Internal status not in execution");
-         //   break;
         default:
             SET_PLAYREC_RETVAL(retval,PLAY_FAIL,"Unknown status, can''t stop");
             break;
@@ -298,9 +295,6 @@ const PLAYREC_RETVAL Play::resetDevice()
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
     if (m_status!=PLAY_NOT_INIT) {
         Q_ASSERT_X(!m_audioOutput.isNull(), Q_FUNC_INFO, "Audio device must be init before reset");
-        m_audioOutput.data()->reset();
-        m_audioOutput.data()->disconnect();
-        QCoreApplication::instance()->processEvents();
         delete m_audioOutput;
         m_audioOutput=NULL;
         m_audioOutputInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
@@ -399,12 +393,12 @@ const PLAYREC_RETVAL Play::changeAudioStream(QIODevice *playbackOutputStream) {
         QAudioDeviceInfo outputDeviceInfo=m_audioOutputInfo;
         QAudioFormat format=m_audioOutput.data()->format();
         retval=stop();
-        if (!retval.status) {
+        if (retval.status!=PLAY_OK) {
             qDebug() << Q_FUNC_INFO << "Stop error " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
             //return ???
         }
         retval=resetDevice();
-        if (!retval.status) {
+        if (retval.status!=PLAY_OK) {
             qDebug() << Q_FUNC_INFO << "Reset error " << PlayRecUtils::playrecReturnValueToString(retval.status);
             //return ???
         }
@@ -437,9 +431,9 @@ inline void Play::setPreviousBytePosition(qint64 byte)
 
 inline void Play::setAudioStream(QIODevice* audioStream)
 {
-    if (m_audioStream!=audioStream)  {
-        emit audioStreamChanged();
+    if (m_audioStream!=audioStream)  {        
         m_audioStream=audioStream;
+        emit audioStreamChanged(m_audioStream);
     }
 }
 
