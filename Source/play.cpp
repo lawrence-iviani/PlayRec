@@ -261,7 +261,6 @@ const PLAYREC_RETVAL Play::stop()
 {
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
 
-    QString  errMsg="";
     switch (m_status) {
         case PLAY_NOT_INIT:
             SET_PLAYREC_RETVAL(retval,PLAY_AUDIO_OUTPUT_NOT_READY,"Internal status not ready. Can''t stop");
