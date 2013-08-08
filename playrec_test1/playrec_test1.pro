@@ -29,6 +29,7 @@ CONFIG(debug, debug|release) {
     MOC_DIR = $$PWD/../build/debug/moc
     CLEANDIROBJ =  $$PWD/../build/debug/obj
     CLEANDIR = $$PWD/../build/debug
+    PRE_TARGETDEPS += $$PWD/../build/debug/libPlayrec.dylib
     macx {
         POSTLINKDIR = $$PWD/../build/debug
         LIBS += -L$$PWD/../build/debug/
@@ -41,12 +42,15 @@ CONFIG(debug, debug|release) {
     MOC_DIR = $$PWD/../build/release/moc
     CLEANDIROBJ =  $$PWD/../build/release/obj
     CLEANDIR = $$PWD/../build/release
+    PRE_TARGETDEPS += $$PWD/../build/release/libPlayrec.dylib
     macx {
         POSTLINKDIR = $$PWD/../build/release
         LIBS += -L$$PWD/../build/release/
         LIBS += -lPlayRec
     }
 }
+
+
 
 macx {
     QMAKE_POST_LINK += $$quote(cp $$POSTLINKDIR/*.dylib $$POSTLINKDIR/playrec_test1.app/Contents/MacOS/)

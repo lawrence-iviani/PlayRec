@@ -25,6 +25,7 @@ HEADERS += playrec_global.h \
     play.h \
 
 
+
 CONFIG(debug, debug|release) {
     DESTDIR = $$PWD/../build/debug
     OBJECTS_DIR = $$PWD/../build/debug/obj

@@ -171,7 +171,6 @@ void Play::audioStateChanged(QAudio::State state)
 const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &outputDevice, const QAudioFormat &outputFormat)
 {
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
-
     //TODO: remove this assert with a reset it it's init!!
     Q_ASSERT_X(m_status==PLAY_NOT_INIT, Q_FUNC_INFO, "Internal status already init");
     //Q_ASSERT_X(m_audioOutput.isNull(), Q_FUNC_INFO, "Audio device should be empty");
