@@ -40,6 +40,9 @@ private slots:
 
     //Handle position user interaction
     void faderPositionHasChanged(int position);
+
+    //Handle any underlayer variation in the device (due to some error or adaption)
+    void playbackDeviceHasChanged(QIODevice* stream,QAudioDeviceInfo device,QAudioFormat format );
 };
 
 #endif // MAINWINDOW_H

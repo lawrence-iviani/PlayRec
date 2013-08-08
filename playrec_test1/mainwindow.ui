@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>512</width>
-    <height>456</height>
+    <width>513</width>
+    <height>512</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>0</x>
       <y>0</y>
       <width>511</width>
-      <height>391</height>
+      <height>471</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="centralWidgetLayout">
@@ -38,7 +38,7 @@
           <x>-1</x>
           <y>-1</y>
           <width>511</width>
-          <height>121</height>
+          <height>132</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="layoutPlayback">
@@ -56,6 +56,13 @@
           <widget class="QPushButton" name="pushButtonResetPlayback">
            <property name="text">
             <string>Reset Playback</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonChangeFormat">
+           <property name="text">
+            <string>Change format</string>
            </property>
           </widget>
          </item>
@@ -147,6 +154,70 @@
       </widget>
      </item>
      <item>
+      <widget class="QFrame" name="framePlaybackInfo">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QWidget" name="gridLayoutWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>-1</x>
+          <y>-1</y>
+          <width>511</width>
+          <height>101</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="layoutPlaybackInfo">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Soundcard</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Format</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="labelSoundcard">
+           <property name="text">
+            <string>No sound card selected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="labelFormat">
+           <property name="text">
+            <string>No Format selected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Stream</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLabel" name="labelStream">
+           <property name="text">
+            <string>No Stream selected</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+     <item>
       <widget class="QFrame" name="frameMessage">
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
@@ -160,7 +231,7 @@
           <x>-1</x>
           <y>-1</y>
           <width>511</width>
-          <height>121</height>
+          <height>141</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="layoutMessage">
@@ -183,7 +254,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>512</width>
+     <width>513</width>
      <height>22</height>
     </rect>
    </property>

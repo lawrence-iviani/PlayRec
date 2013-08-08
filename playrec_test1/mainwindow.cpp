@@ -24,6 +24,7 @@ void MainWindow::setUILayout() {
     ui->frameControls->setLayout(ui->layoutControls);
     ui->frameMessage->setLayout(ui->layoutMessage);
     ui->framePlayback->setLayout(ui->layoutPlayback);
+    ui->framePlaybackInfo->setLayout(ui->layoutPlaybackInfo);
 }
 
 void MainWindow::populateComboBoxes() {
@@ -48,6 +49,7 @@ void MainWindow::connectSignals() {
 
     //connect playrec system to mainwainwindow
     connect(&m_playrec,SIGNAL(playbackStatusChanged(int)),this,SLOT(playbackStatusHasChanged(int)));
+    connect(&m_playrec,SIGNAL(playbackChanged(QIODevice*,QAudioDeviceInfo,QAudioFormat)),this,SLOT(playbackDeviceHasChanged(QIODevice*,QAudioDeviceInfo,QAudioFormat)));
 }
 
 //PRIVATE SLOTS
@@ -57,7 +59,13 @@ void MainWindow::playbackPositionHasChanged(qreal time) {
 }
 
 void MainWindow::comboBoxPlaybackHasChanged(QString namePBDev) {
-    qDebug() << Q_FUNC_INFO << "DO NOTHING";
+    QMap<QString,QAudioDeviceInfo> _pbDev=PlayRec::availablePlaybackDevices();
+
+    QList<QAudioDeviceInfo> _valuesList = _pbDev.values(namePBDev);
+    if (_valuesList.size()!=0) {
+        //there should be only one device with that name
+        m_playrec.setPlaybackAudioDevice( _valuesList.at(0));
+    }
 }
 
 void MainWindow::openNewPlaybackFile() {
@@ -105,6 +113,17 @@ void MainWindow::playbackStatusHasChanged(int status) {
         qDebug() << Q_FUNC_INFO << "unkwnon status";
         ui->LabelStatus->setText("Unknown status");
     }
+}
+
+void MainWindow::playbackDeviceHasChanged(QIODevice *stream, QAudioDeviceInfo device, QAudioFormat format) {
+
+    ui->labelSoundcard->setText(device.deviceName());
+    ui->labelFormat->setText(PlayRecUtils::formatToString(format));
+    QString _msg;
+    _msg.sprintf("%08p", stream);
+    ui->labelStream->setText(QString("%1").arg(_msg));
+
+
 }
 
 void MainWindow::faderPositionHasChanged(int position)
