@@ -64,7 +64,7 @@ public slots:
     const PLAYREC_RETVAL stop();
     const PLAYREC_RETVAL pause();
     const PLAYREC_RETVAL unpause();
-    const PLAYREC_RETVAL changeAudioInterface( QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat()) {return PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");}//TODO
+    const PLAYREC_RETVAL changeAudioInterface( QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat());
     const PLAYREC_RETVAL changeAudioFormat(const QAudioFormat &format = QAudioFormat()) {return  PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");} //TODO
     const PLAYREC_RETVAL changeAudioStream(QIODevice *playbackOutputStream);
     const PLAYREC_RETVAL setPosition(const quint64 sample);

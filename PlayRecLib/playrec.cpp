@@ -68,7 +68,7 @@ void PlayRec::start()
             result=m_play->start();
             break;
     }
-    if (!result.status)
+    if (result.status!=PLAY_OK)
         qDebug() << Q_FUNC_INFO << " operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
 
 }
@@ -78,7 +78,7 @@ void PlayRec::stop()
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
-            m_play->stop();
+            result=m_play->stop();
             break;
 
         case REC:
@@ -86,10 +86,10 @@ void PlayRec::stop()
             break;
 
         case PLAYANDREC:
-            m_play->stop();
+            result=m_play->stop();
             break;
     }
-    if (!result.status)
+    if (result.status!=PLAY_OK)
         qDebug() << Q_FUNC_INFO << " operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
 
 }
@@ -116,24 +116,23 @@ void PlayRec::pause(bool pause)
                 result=m_play->unpause();
             break;
     }
-    if (!result.status)
+    if (result.status!=PLAY_OK)
         qDebug() << Q_FUNC_INFO << " operation error,"<< (pause ? "pausing" : "unpausing")  << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
 }
 
 void PlayRec::resetPlaybackStream() {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     result=m_play->resetDevice();
-    if (!result.status)
+    if (result.status!=PLAY_OK)
         qDebug() << Q_FUNC_INFO << " operation error resetting playback," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
 }
 
 void PlayRec::setPlaybackStream(QIODevice * stream)
 {
-    //init playback
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
 
     result=m_play->changeAudioStream(stream);
-    if (!result.status) {
+    if (result.status!=PLAY_OK) {
         qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
     }
 }
@@ -142,7 +141,7 @@ void PlayRec::setPlaybackPosition(quint64 sample)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     result=m_play->setPosition(sample);
-    if (!result.status) {
+    if (result.status!=PLAY_OK) {
         qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
     }
 }
@@ -153,8 +152,28 @@ void PlayRec::setPlaybackPosition(qreal timePosition)
 
     quint64 sample= static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
     result=m_play->setPosition(sample);
-    if (!result.status) {
+    if (result.status!=PLAY_OK) {
         qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    }
+}
+
+void PlayRec::setPlaybackAudioDevice(const QString &deviceName) {
+    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+        if(deviceInfo.deviceName()==deviceName) {
+            setPlaybackAudioDevice(deviceInfo);
+            break;
+        }
+    }
+
+}
+
+void PlayRec::setPlaybackAudioDevice(const QAudioDeviceInfo &device) {
+    PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
+
+    result=m_play->changeAudioInterface(device,device.preferredFormat());
+    if (result.status!=PLAY_OK ) {
+        qDebug() << Q_FUNC_INFO << "Can't select interface "<< device.deviceName() << " with format " << PlayRecUtils::formatToString(device.preferredFormat())<<" ERROR:" << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+        result=m_play->changeAudioInterface(QAudioDeviceInfo::defaultOutputDevice());
     }
 }
 
@@ -164,7 +183,7 @@ void PlayRec::setPlaybackPosition(qreal timePosition)
 QMap<QString, QAudioDeviceInfo> PlayRec::availablePlaybackDevices()
 {
     QMap<QString, QAudioDeviceInfo> retval;
-    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
         retval.insert(deviceInfo.deviceName(),deviceInfo);
     }
     return retval;
@@ -173,7 +192,7 @@ QMap<QString, QAudioDeviceInfo> PlayRec::availablePlaybackDevices()
 QMap<QString, QAudioDeviceInfo> PlayRec::availableRecordingDevices()
 {
     QMap<QString, QAudioDeviceInfo> retval;
-    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
         retval.insert(deviceInfo.deviceName(),deviceInfo);
     }
     return retval;

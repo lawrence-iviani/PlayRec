@@ -28,9 +28,8 @@ void MainWindow::setUILayout() {
 }
 
 void MainWindow::populateComboBoxes() {
-    QMap<QString,QAudioDeviceInfo> _pbDev=PlayRec::availablePlaybackDevices();
-    QStringList _lNames(_pbDev.uniqueKeys());
-    ui->comboBoxPlaybackDevice->addItems(_lNames);
+    QStringList _pbDevName=PlayRecUtils::availablePlaybackDevices();
+    ui->comboBoxPlaybackDevice->addItems(_pbDevName);
 }
 
 void MainWindow::connectSignals() {
@@ -59,13 +58,14 @@ void MainWindow::playbackPositionHasChanged(qreal time) {
 }
 
 void MainWindow::comboBoxPlaybackHasChanged(QString namePBDev) {
-    QMap<QString,QAudioDeviceInfo> _pbDev=PlayRec::availablePlaybackDevices();
+//    QMap<QString,QAudioDeviceInfo> _pbDev=PlayRec::availablePlaybackDevices();
 
-    QList<QAudioDeviceInfo> _valuesList = _pbDev.values(namePBDev);
-    if (_valuesList.size()!=0) {
-        //there should be only one device with that name
-        m_playrec.setPlaybackAudioDevice( _valuesList.at(0));
-    }
+//    QList<QAudioDeviceInfo> _valuesList = _pbDev.values(namePBDev);
+//    if (_valuesList.size()!=0) {
+//        //there should be only one device with that name
+//        m_playrec.setPlaybackAudioDevice( _valuesList.at(0));
+//    }
+    m_playrec.setPlaybackAudioDevice(namePBDev);
 }
 
 void MainWindow::openNewPlaybackFile() {

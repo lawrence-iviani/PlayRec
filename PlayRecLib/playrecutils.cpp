@@ -4,6 +4,24 @@ PlayRecUtils::PlayRecUtils()
 {
 }
 
+QStringList PlayRecUtils::availablePlaybackDevices()
+{
+    QStringList retval;
+    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+        retval.append(deviceInfo.deviceName());
+    }
+    return retval;
+}
+
+QStringList PlayRecUtils::availableRecordingDevices()
+{
+    QStringList retval;
+    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+        retval.append(deviceInfo.deviceName());
+    }
+    return retval;
+}
+
 const QString PlayRecUtils::decodeInternalAudioErrorToString(const QAudio::Error &err) {
     QString retval="";
     switch (err) {
@@ -79,6 +97,9 @@ const QString PlayRecUtils::playrecReturnValueToString(const int status ) {
         break;
     case PLAY_CANT_INIT_STREAM:
         retval="PLAY_CANT_INIT_STREAM";
+        break;
+    case PLAY_STREAM_NOT_INIT:
+        retval="PLAY_STREAM_NOT_INIT";
         break;
     default:
         retval="UNKNOWN CODE";

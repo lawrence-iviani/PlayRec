@@ -10,6 +10,9 @@ class PlayRecUtils
 public:
     PlayRecUtils();
 
+    static QStringList availablePlaybackDevices();
+    static QStringList availableRecordingDevices();
+
     //Convert an error code of the IO device to string
     static const QString decodeInternalAudioErrorToString(const QAudio::Error &err);
 

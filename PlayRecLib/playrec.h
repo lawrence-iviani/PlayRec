@@ -56,10 +56,8 @@ public slots:
     void setRecordingStream(QIODevice * stream) {}
 
     //Set the play/rec device, based on the sound card
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device) {}//try to reuse previous format
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format) {}
-    void setRecordingAudioDevice(const QAudioDeviceInfo device) {}//try to reuse previous format
-    void setRecordingAudioDevice(const QAudioDeviceInfo device,const QAudioFormat& format) {}
+    void setPlaybackAudioDevice(const QString& deviceName);
+    void setRecordingAudioDevice(const QString& deviceName) {}
 
     //Reset, some or all device
     void resetPlaybackStream();
@@ -80,6 +78,10 @@ private:
     PlayRecMode m_audioMode;
 
     void connectSignals();
+    void setPlaybackAudioDevice(const QAudioDeviceInfo& device);//try to reuse previous format
+    void setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format) {}
+    void setRecordingAudioDevice(const QAudioDeviceInfo device) {}//try to reuse previous format
+    void setRecordingAudioDevice(const QAudioDeviceInfo device,const QAudioFormat& format) {}
 
 private slots:
     //If playback position changed this slot get the sample and emit playbackPositionChanged in seconds.
