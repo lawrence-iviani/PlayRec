@@ -228,8 +228,9 @@ const PLAYREC_RETVAL Play::start(const quint64 startSample)
     //TODO: SKIPPING THE HEADER 48 bytes JUST FOR DEBUG,
     //EVERY STREAM MUST SKIP ITS HEADER. TODO!!!
     qDebug() << Q_FUNC_INFO << "SKIPPING 48 BYTES HEADER FOR DEBUG PURPOSE";
-    m_audioStream->read(WAVEFILE_HEADER+startSample);
-    setPreviousBytePosition(WAVEFILE_HEADER+startSample);
+    quint64 bytesPosition=qMin(PlayRecUtils::convertSampleToByte(startSample,m_audioOutput->format())+WAVEFILE_HEADER,m_audioStream->size() );
+    m_audioStream->read(bytesPosition);
+    setPreviousBytePosition(bytesPosition);
     //END TODO
             m_audioOutput->start(m_audioStream);
             errMsg=PlayRecUtils::decodeInternalAudioErrorToString(m_audioOutput->error());

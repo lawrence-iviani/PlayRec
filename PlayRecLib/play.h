@@ -56,7 +56,6 @@ public:
 public slots:
     //NOTE Audiostream dev'essere impacchettato in un vettore tipo QVector<QIODevice&>, in quanto devo suonare/registrare un numero multiplo di canali.
     // deve quindi essere modificato anche il numero
-//    const PLAYREC_RETVAL init(QIODevice *audioStream,  QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat());
 
     const PLAYREC_RETVAL resetDevice();
     const PLAYREC_RETVAL start(const quint64 startSample);
