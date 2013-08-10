@@ -60,7 +60,9 @@ typedef enum {
     PLAY_FUNCTION_NOT_IMPLEMENTED= -3,
     PLAY_ALREADY_PAUSED = -4,
     PLAY_ALREADY_PLAYING = -5,
-    PLAY_ALREADY_STOPPED = -6
+    PLAY_ALREADY_STOPPED = -6,
+    PLAY_CANT_INIT_AUDIO = -7,
+    PLAY_CANT_INIT_STREAM = -8
     //other, can't change interface, streamerror ecc
 } PLAYREC_RETURNVALUE;
 

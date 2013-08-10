@@ -6,21 +6,20 @@
 Play::Play(QObject *parent)  :
     QObject(parent) ,
     m_audioStream(0),
-    m_audioOutputStream (0) ,
     m_audioOutput(0) ,
+    m_audioOutputInfo(),
     m_audioOutputBufferLength(Play::defaultBufferLen),//samples
     m_previousBytePosition(0),
     m_status(PLAY_NOT_INIT),
     m_notifyInterval(Play::defaultNotifyInterval) //ms
 {
-
+    initDevice();
 }
 
 Play::~Play()
 {
-    resetDevice();
+ //   resetDevice();
 }
-
 
 //-----------------------------------------------------------------------------
 // Public Methods
@@ -122,7 +121,7 @@ void Play::audioStateChanged(QAudio::State state)
             case QAudio::UnderrunError:
             case QAudio::FatalError:
                 qDebug() << Q_FUNC_INFO << "AudioOutput error: " << PlayRecUtils::decodeInternalAudioErrorToString(error);
-                reinit();
+                reinitDevice();
                 break;
             default:
                 Q_ASSERT_X(0, Q_FUNC_INFO, "Unkwon internal error, should never been here!!!");
@@ -168,45 +167,23 @@ void Play::audioStateChanged(QAudio::State state)
 //-----------------------------------------------------------------------------
 // Public slots
 //-----------------------------------------------------------------------------
-const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &outputDevice, const QAudioFormat &format)
-{
-    PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
-    Q_ASSERT_X(m_status==PLAY_NOT_INIT, Q_FUNC_INFO, "Internal status already init");
-    Q_ASSERT_X(!m_audioOutput, Q_FUNC_INFO, "Audio device should be empty");
+//const PLAYREC_RETVAL Play::init(QIODevice *audioStream, const QAudioDeviceInfo &outputDevice, const QAudioFormat &format)
+//{
+//    PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
 
-    //Check and assign format
-    QAudioFormat outputFormat=QAudioFormat();
-    if (format==outputFormat) //an empty (and invalid) audio format
-    {
-        outputFormat=outputDevice.nearestFormat(format);
-        emit audioFormatChanged(outputFormat);
-    }
-    else {
-        outputFormat=format;
-    }
+//    retval=initDevice(outputDevice,&format);
+//    if (!retval.status) {
+//        qDebug() << Q_FUNC_INFO << "Can't init device: " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
+//        return retval;
+//    }
 
-    //opening IO audio output
-    m_audioOutput = new QAudioOutput(outputDevice, outputFormat, this);
-    m_audioOutputInfo=outputDevice;
-    m_audioOutput->setBufferSize(m_audioOutputBufferLength);
-    m_audioOutput->setNotifyInterval(m_notifyInterval);
+//    setAudioStream(audioStream);
 
-    qDebug() << Q_FUNC_INFO << "Open " << outputDevice.deviceName()
-             << " with format: " << PlayRecUtils::formatToString(outputFormat)
-             << "Buffer size" << m_notifyInterval << "Samples"
-             << "Notify interval " << m_notifyInterval << "ms";
+//    qDebug() << Q_FUNC_INFO << "Audio Output status at init is " << PlayRecUtils::qAudioStateToString(m_audioOutput->state());
 
-    setAudioStream(audioStream);
-
-    qDebug() << Q_FUNC_INFO << "Audio Output status at init is " << PlayRecUtils::qAudioStateToString(m_audioOutput->state());
-
-    //connect signal from m_audioOutput
-    CHECKED_CONNECT(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), this, SLOT(audioStateChanged(QAudio::State)));
-    CHECKED_CONNECT(m_audioOutput, SIGNAL(notify()), this, SLOT(notified()));
-
-    setInternalStatus(Play::PLAY_READY);
-    return  retval;
-}
+//    setInternalStatus(Play::PLAY_READY);
+//    return  retval;
+//}
 
 const PLAYREC_RETVAL Play::start()
 {
@@ -279,7 +256,7 @@ const PLAYREC_RETVAL Play::stop()
                 qDebug() << Q_FUNC_INFO <<"Error stopping " << errMsg;
                 break;
             }         
-            reinit();
+            reinitDevice();
             setPreviousBytePosition(0);
             break;
         // case PLAY_READY:
@@ -296,18 +273,19 @@ const PLAYREC_RETVAL Play::stop()
 const PLAYREC_RETVAL Play::resetDevice()
 {
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
-    if (m_status!=PLAY_NOT_INIT) {
-        Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init before reset");
+
+    if (m_audioOutput) {
+        m_audioOutput->disconnect();//avoid sending signal to the this state machine
         m_audioOutput->reset();
-        m_audioOutput->disconnect();
         QCoreApplication::instance()->processEvents();
-        delete m_audioOutput;
-        m_audioOutput=NULL;
-        m_audioOutputInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
-        setInternalStatus(Play::PLAY_NOT_INIT);
-        setPreviousBytePosition(0);
-        emit audioReset();
-    }  else  SET_PLAYREC_RETVAL(retval,PLAY_AUDIO_OUTPUT_NOT_READY,"Internal status not ready");
+    }
+    delete m_audioOutput;
+    m_audioOutput=NULL;
+    m_audioOutputInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
+    setInternalStatus(Play::PLAY_NOT_INIT);
+    setPreviousBytePosition(0);
+    emit audioReset();
+
     return retval;
 }
 
@@ -394,29 +372,82 @@ const PLAYREC_RETVAL Play::changeAudioStream(QIODevice *playbackOutputStream) {
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
 
     if (m_status==PLAY_NOT_INIT) {
-        retval=init(playbackOutputStream);
+        retval=initDevice();
+        if (!retval.status) {
+            qDebug() << Q_FUNC_INFO << "Can't init device: " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
+            return retval;
+        }
+        retval=initDevice();
     } else {
-        Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init");
-        QAudioDeviceInfo outputDeviceInfo=m_audioOutputInfo;
-        QAudioFormat format=m_audioOutput->format();
-        retval=stop();
+        retval=reinitDevice();
         if (!retval.status) {
-            qDebug() << Q_FUNC_INFO << "Stop error " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
-            //return ???
+            qDebug() << Q_FUNC_INFO << "Can't init device: " << PlayRecUtils::playrecReturnValueToString(retval.status) ;
+            return retval;
         }
-        retval=resetDevice();
-        if (!retval.status) {
-            qDebug() << Q_FUNC_INFO << "Reset error " << PlayRecUtils::playrecReturnValueToString(retval.status);
-            //return ???
-        }
-        retval=init(playbackOutputStream,outputDeviceInfo,format);
     }
+    setAudioStream(playbackOutputStream);
     return retval;
 }
 
 //-----------------------------------------------------------------------------
 // Private
 //-----------------------------------------------------------------------------
+
+const PLAYREC_RETVAL Play::initDevice( const QAudioDeviceInfo &outputDevice, const QAudioFormat &format)
+{
+    PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
+
+    QAudioFormat _previousFormat;
+
+    //There's a previous valid format?
+    if (m_audioOutput && m_audioOutput->format().isValid())
+        _previousFormat=m_audioOutput->format();
+
+    QAudioFormat _definitiveFormat=outputDevice.nearestFormat(format);
+
+    if (_definitiveFormat!=format || _definitiveFormat!=_previousFormat) {
+         qDebug() << Q_FUNC_INFO << "Changing audio format from " << PlayRecUtils::formatToString(_previousFormat)
+                  << " to candidate " << PlayRecUtils::formatToString(format)
+                  << " finally " <<  PlayRecUtils::formatToString(_definitiveFormat) ;
+        emit audioFormatChanged(_definitiveFormat);
+    }
+
+
+    //opening IO audio output
+    m_audioOutput = new QAudioOutput(outputDevice, _definitiveFormat, this);
+    m_audioOutputInfo=outputDevice;
+    m_audioOutput->setBufferSize(m_audioOutputBufferLength);
+    m_audioOutput->setNotifyInterval(m_notifyInterval);
+
+    if (!m_audioOutput) {
+        setInternalStatus(Play::PLAY_NOT_INIT);
+        SET_PLAYREC_RETVAL(retval,PLAY_CANT_INIT_AUDIO,QString("Can''t open device %1").arg(outputDevice.deviceName()));
+        return retval;
+    }
+    m_audioOutput->reset();
+    //VERIFY CODE!!
+    if (m_audioOutput->error()!=QAudio::NoError) {
+        resetDevice();
+        qDebug() <<  Q_FUNC_INFO << "Error opening device " << outputDevice.deviceName() << " error: " << PlayRecUtils::decodeInternalAudioErrorToString( m_audioOutput->error());
+        SET_PLAYREC_RETVAL(retval,PLAY_CANT_INIT_AUDIO,QString("Error opening device %1 Error: %2").arg(PlayRecUtils::decodeInternalAudioErrorToString( m_audioOutput->error())).arg(outputDevice.deviceName()));
+        return retval;
+    }
+    emit audioInterfaceChanged(m_audioOutputInfo);
+
+    //connect signal from m_audioOutput
+    CHECKED_CONNECT(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), this, SLOT(audioStateChanged(QAudio::State)));
+    CHECKED_CONNECT(m_audioOutput, SIGNAL(notify()), this, SLOT(notified()));
+
+    qDebug() << Q_FUNC_INFO << "Open " << m_audioOutputInfo.deviceName()
+             << " with format: " << PlayRecUtils::formatToString(m_audioOutput->format())
+             << "Buffer size" << m_audioOutput->bufferSize() << "Samples"
+             << "Notify interval " << m_audioOutput->notifyInterval() << "ms";
+
+
+    setInternalStatus(Play::PLAY_READY);
+    return  retval;
+}
+
 inline void Play::setInternalStatus(PLAY_STATUS newStatus)
 {
     if (newStatus!=m_status) {
@@ -444,12 +475,11 @@ inline void Play::setAudioStream(QIODevice* audioStream)
     }
 }
 
-const PLAYREC_RETVAL Play::reinit()
+const PLAYREC_RETVAL Play::reinitDevice()
 {
     qDebug() << Q_FUNC_INFO << "Reinit AudioDevice";
-    QIODevice *audioStream=m_audioStream;
     QAudioDeviceInfo outputDeviceInfo=m_audioOutputInfo;
     QAudioFormat format=m_audioOutput->format();
     resetDevice();
-    return init(audioStream,outputDeviceInfo,format);
+    return initDevice(outputDeviceInfo,format);
 }

@@ -74,6 +74,12 @@ const QString PlayRecUtils::playrecReturnValueToString(const int status ) {
     case PLAY_ALREADY_STOPPED:
         retval="PLAY_ALREADY_STOPPED";
         break;
+    case PLAY_CANT_INIT_AUDIO:
+        retval="PLAY_CANT_INIT_AUDIO";
+        break;
+    case PLAY_CANT_INIT_STREAM:
+        retval="PLAY_CANT_INIT_STREAM";
+        break;
     default:
         retval="UNKNOWN CODE";
         break;

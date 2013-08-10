@@ -56,7 +56,8 @@ public:
 public slots:
     //NOTE Audiostream dev'essere impacchettato in un vettore tipo QVector<QIODevice&>, in quanto devo suonare/registrare un numero multiplo di canali.
     // deve quindi essere modificato anche il numero
-    const PLAYREC_RETVAL init(QIODevice *audioStream,  QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat());
+//    const PLAYREC_RETVAL init(QIODevice *audioStream,  QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat());
+
     const PLAYREC_RETVAL resetDevice();
     const PLAYREC_RETVAL start(const quint64 startSample);
     const PLAYREC_RETVAL start();
@@ -78,15 +79,11 @@ signals:
     void audioStreamChanged(QIODevice * stream);//Some information about the format
 
 private:
+
     /**
      * @brief m_audioStream the stream (file, etc) that must be reproducted (not owned).
      */
     QIODevice* m_audioStream; // not owned
-
-    /**
-     * @brief m_outputStream the pointer to the output stream provided by the sound system
-     */
-    QIODevice*  m_audioOutputStream; //only in push mode!! For now I am using pull mode
 
     /**
      * @brief m_audioOutput the output audio device where play the stream
@@ -119,6 +116,15 @@ private:
     int m_notifyInterval;
 
     /**
+     * @brief initDevice Init a device with some format or the default device if any values is passed to the function
+     * @param outputDevice
+     * @param format
+     * @return
+     */
+    const PLAYREC_RETVAL initDevice(QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat());
+
+
+    /**
      * @brief setInternalStatus An utility to set new internal status and emit signals
      * @param newStatus The new status to be set
      */
@@ -140,7 +146,7 @@ private:
      * @brief reinit reset and reinit with the previous audio device. Used when an internal error to the underlayer (IO AUDIO) happen
      * @return
      */
-    const PLAYREC_RETVAL reinit();
+    const PLAYREC_RETVAL reinitDevice();
 
 private slots:
     void notified();
