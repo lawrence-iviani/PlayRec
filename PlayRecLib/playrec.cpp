@@ -52,12 +52,12 @@ void PlayRec::connectSignals()
 //-----------------------------------------------------------------------------
 // Public slots
 //-----------------------------------------------------------------------------
-void PlayRec::start()
+void PlayRec::start(const quint64 sample)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
-            result=m_play->start();
+        result=m_play->start(sample);
             break;
 
         case REC:
@@ -65,12 +65,11 @@ void PlayRec::start()
             break;
 
         case PLAYANDREC:
-            result=m_play->start();
+            result=m_play->start(sample);
             break;
     }
     if (result.status!=PLAY_OK)
         qDebug() << Q_FUNC_INFO << " operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-
 }
 
 void PlayRec::stop()

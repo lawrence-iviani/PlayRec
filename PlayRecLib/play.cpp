@@ -371,6 +371,11 @@ const PLAYREC_RETVAL Play::unpause()
 const PLAYREC_RETVAL Play::setPosition(const quint64 sample)
 {
     PLAYREC_RETVAL retval=PLAYREC_INIT_OK_RETVAL();
+    if (!m_audioStream) {
+        SET_PLAYREC_RETVAL(retval,PLAY_STREAM_NOT_INIT,"Audio stream not init, set position");
+        return retval;
+    }
+
     if (m_status!=PLAY_NOT_INIT) {
         Q_ASSERT_X(m_audioOutput, Q_FUNC_INFO, "Audio device must be init");
         Q_ASSERT_X(m_audioStream, Q_FUNC_INFO, "Audio stream must be init");

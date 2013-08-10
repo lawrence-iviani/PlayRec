@@ -41,7 +41,20 @@ public:
     };
 
 public slots:
-    void start();
+    /**
+     * @brief start Start the playback at sample 0 (header should be skipped)
+     * @param sample
+     */
+    void start(const quint64 sample=0);
+
+    /**
+     * @brief startAtTimePosition convert the time position in samples
+     * @param timePosition
+     */
+    void startAtTimePosition(const qreal timePosition) {
+        quint64 sample=static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
+        start(sample);
+    }
     void stop();
     void pause(bool pause);
     void setPlaybackPosition(quint64 sample); //in sample
