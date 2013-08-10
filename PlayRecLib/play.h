@@ -36,6 +36,7 @@ public:
      */
     const quint64 streamLength();
 
+
     typedef enum {
         PLAY_NOT_INIT = 0,
         PLAY_READY = 1,
@@ -62,7 +63,7 @@ public slots:
     const PLAYREC_RETVAL stop();
     const PLAYREC_RETVAL pause();
     const PLAYREC_RETVAL unpause();
-    //const PLAYREC_RETVAL changeAudioInterface( QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat()) {return PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");}//TODO
+    const PLAYREC_RETVAL changeAudioInterface( QAudioDeviceInfo  const &outputDevice = QAudioDeviceInfo::defaultOutputDevice(), const QAudioFormat &format = QAudioFormat()) {return PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");}//TODO
     const PLAYREC_RETVAL changeAudioFormat(const QAudioFormat &format = QAudioFormat()) {return  PLAYREC_INIT_RETVAL(PLAY_FUNCTION_NOT_IMPLEMENTED,"NOT YET IMPL");} //TODO
     const PLAYREC_RETVAL changeAudioStream(QIODevice *playbackOutputStream);
     const PLAYREC_RETVAL setPosition(const quint64 sample);
@@ -74,23 +75,23 @@ signals:
     void audioReset();
     void audioInterfaceChanged(QAudioDeviceInfo audioDevice);
     void audioFormatChanged(QAudioFormat format);
-    void audioStreamChanged(QIODevice * stream); //Some information about the stre (name, format etc.)
+    void audioStreamChanged(QIODevice * stream);//Some information about the format
 
 private:
     /**
      * @brief m_audioStream the stream (file, etc) that must be reproducted (not owned).
      */
-    QIODevice * m_audioStream; // not owned
+    QIODevice* m_audioStream; // not owned
 
     /**
      * @brief m_outputStream the pointer to the output stream provided by the sound system
      */
-    QIODevice *  m_audioOutputStream; //only in push mode!! For now I am using pull mode
+    QIODevice*  m_audioOutputStream; //only in push mode!! For now I am using pull mode
 
     /**
      * @brief m_audioOutput the output audio device where play the stream
      */
-    QAudioOutput * m_audioOutput;
+    QAudioOutput* m_audioOutput;
 
     /**
      * @brief m_audioOutputInfo The Information associated to the m_audioOutput selected
@@ -140,12 +141,6 @@ private:
      * @return
      */
     const PLAYREC_RETVAL reinit();
-
-    void deleteAudioOutput() {
-        if (m_audioOutput)
-            delete m_audioOutput;
-        m_audioOutput=NULL;
-    }
 
 private slots:
     void notified();

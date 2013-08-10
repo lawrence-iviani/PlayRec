@@ -56,8 +56,8 @@ public slots:
     void setRecordingStream(QIODevice * stream) {}
 
     //Set the play/rec device, based on the sound card
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device);//try to reuse previous format
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format);
+    void setPlaybackAudioDevice(const QAudioDeviceInfo& device) {}//try to reuse previous format
+    void setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format) {}
     void setRecordingAudioDevice(const QAudioDeviceInfo device) {}//try to reuse previous format
     void setRecordingAudioDevice(const QAudioDeviceInfo device,const QAudioFormat& format) {}
 
@@ -73,29 +73,19 @@ signals:
     void playbackPositionChanged(qreal timePosition);
     void playbackChanged(QIODevice* stream,QAudioDeviceInfo device,QAudioFormat format);
 
-    //Playback signal
-
     //tutti i notify rec and play!!
 private:
-    Play *  m_play;
-    Rec *   m_rec;
+    Play * m_play;
+    Rec * m_rec;
     PlayRecMode m_audioMode;
 
-    QAudioDeviceInfo m_lastPlaybackAudioInfo;
-    QIODevice * m_lastPlaybackStream;
-    QAudioFormat m_lastPlaybackFormat;
-
     void connectSignals();
-
-    void deletePlayback() {
-        if (m_play)
-            delete m_play;
-        m_play=NULL;
-    }
 
 private slots:
     //If playback position changed this slot get the sample and emit playbackPositionChanged in seconds.
     void playbackPositionHasChanged(quint64 sample);
+
+    //new
     void playbackStreamHasChanged(QIODevice* stream);
     void playbackInterfaceHasChanged(QAudioDeviceInfo device);
     void playbackFormatHasChanged(QAudioFormat format);
