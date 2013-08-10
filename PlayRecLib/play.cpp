@@ -301,8 +301,9 @@ const PLAYREC_RETVAL Play::resetDevice()
     delete m_audioOutput;
     m_audioOutput=NULL;
     m_audioOutputInfo=QAudioDeviceInfo();//empty the information associated to the m_audioOutput device
-    setInternalStatus(Play::PLAY_NOT_INIT);
     setPreviousBytePosition(0);
+    if (m_audioStream && m_audioStream->isOpen()) m_audioStream->reset();//reset the audio stream
+    setInternalStatus(Play::PLAY_NOT_INIT);
     emit audioReset();
     return retval;
 }
