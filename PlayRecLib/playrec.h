@@ -77,8 +77,8 @@ signals:
 
     //tutti i notify rec and play!!
 private:
-    Play * m_play;
-    Rec * m_rec;
+    Play *  m_play;
+    Rec *   m_rec;
     PlayRecMode m_audioMode;
 
     QAudioDeviceInfo m_lastPlaybackAudioInfo;
@@ -86,6 +86,12 @@ private:
     QAudioFormat m_lastPlaybackFormat;
 
     void connectSignals();
+
+    void deletePlayback() {
+        if (m_play)
+            delete m_play;
+        m_play=NULL;
+    }
 
 private slots:
     //If playback position changed this slot get the sample and emit playbackPositionChanged in seconds.

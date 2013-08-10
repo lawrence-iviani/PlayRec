@@ -23,7 +23,7 @@ PlayRec::PlayRec(QObject *parent) :
 
 PlayRec::~PlayRec()
 {
-    if (m_play) delete m_play;
+    deletePlayback();
     if (m_rec) delete m_rec;
 }
 
@@ -150,29 +150,45 @@ void PlayRec::setPlaybackStream(QIODevice * stream)
 {
     //init playback
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
-    if (m_play) {
-        result=m_play->changeAudioStream(stream);
-        if (result.status!=PLAY_OK) {
-            qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-        }
-    } else {
-        m_play=new Play(this);
-        connectSignals();
+//    if (m_play) {
+//        result=m_play->changeAudioStream(stream);
+//        if (result.status!=PLAY_OK) {
+//            qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+//        }
+//    } else {
+//        m_play=new Play(this);
+//        connectSignals();
+//        result=m_play->init(stream,m_lastPlaybackAudioInfo, m_lastPlaybackFormat);
+//        if (result.status!=PLAY_OK) {
+//            qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+//          //  delete m_play;
+//        }
+//    }
+    deletePlayback();
+
+    m_play=new Play(this);
+    connectSignals();
+    //check if m_lastPlaybckAudioInfo is valid, assuming no name means no init class
+    if (m_lastPlaybackAudioInfo.deviceName().isEmpty())
+        result=m_play->init(stream);
+    else
         result=m_play->init(stream,m_lastPlaybackAudioInfo, m_lastPlaybackFormat);
-        if (result.status!=PLAY_OK) {
-            qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-          //  delete m_play;
-        }
+
+    if (result.status!=PLAY_OK) {
+        qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+      //  delete m_play;
     }
 }
 
 void PlayRec::setPlaybackAudioDevice(const QAudioDeviceInfo &device, const QAudioFormat &format) {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     if (m_play) {
-        delete m_play;
+        deletePlayback();
      }
     m_play=new Play(this);
     connectSignals();
+
+    qDebug() << Q_FUNC_INFO << "Starting playback device "<< device.deviceName() << "with format" << PlayRecUtils::formatToString(format);
     result=m_play->init(m_lastPlaybackStream ,device,format);
     if (result.status!=PLAY_OK) {
         qDebug() << Q_FUNC_INFO << "INIT operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
