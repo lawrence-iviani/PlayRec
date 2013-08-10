@@ -21,10 +21,10 @@ MainWindow::~MainWindow()
 void MainWindow::setUILayout() {
     //setting layout
     ui->centralWidget->setLayout(ui->centralWidgetLayout);
-    ui->frameControls->setLayout(ui->layoutControls);
-    ui->frameMessage->setLayout(ui->layoutMessage);
-    ui->framePlayback->setLayout(ui->layoutPlayback);
-    ui->framePlaybackInfo->setLayout(ui->layoutPlaybackInfo);
+    ui->groupBoxControls->setLayout(ui->layoutControls);
+    ui->groupBoxMessage->setLayout(ui->layoutMessage);
+    ui->groupBoxPlayback->setLayout(ui->layoutPlayback);
+    ui->groupBoxPlaybackInfo->setLayout(ui->layoutPlaybackInfo);
 }
 
 void MainWindow::populateComboBoxes() {
@@ -36,10 +36,10 @@ void MainWindow::connectSignals() {
     //Connect playback controls
     connect(ui->comboBoxPlaybackDevice , SIGNAL(currentIndexChanged(QString)),this , SLOT(comboBoxPlaybackHasChanged(QString)));
     connect(ui->pushButtonOpenFile,SIGNAL(pressed()),this,SLOT(openNewPlaybackFile()));
-    connect(ui->pushButtonResetPlayback,SIGNAL(pressed()),&m_playrec,SLOT(resetPlaybackStream()));
+    connect(ui->pushButtonResetStream,SIGNAL(pressed()),this,SLOT(resetPlaybackFile()));
 
     //Connect audio controls
-    connect(ui->pushButtonPlay,SIGNAL(pressed()),&m_playrec,SLOT(start()));
+    connect(ui->pushButtonPlay,SIGNAL(pressed()),this,SLOT(startPressed()));
     connect(ui->pushButtonStop,SIGNAL(pressed()),&m_playrec,SLOT(stop()));
     connect(ui->pushButtonPause,SIGNAL(pressed()),this,SLOT(pauseToggled()));
     connect(ui->pushButtonResetALL,SIGNAL(pressed()),&m_playrec,SLOT(resetAllStream()));
@@ -58,13 +58,6 @@ void MainWindow::playbackPositionHasChanged(qreal time) {
 }
 
 void MainWindow::comboBoxPlaybackHasChanged(QString namePBDev) {
-//    QMap<QString,QAudioDeviceInfo> _pbDev=PlayRec::availablePlaybackDevices();
-
-//    QList<QAudioDeviceInfo> _valuesList = _pbDev.values(namePBDev);
-//    if (_valuesList.size()!=0) {
-//        //there should be only one device with that name
-//        m_playrec.setPlaybackAudioDevice( _valuesList.at(0));
-//    }
     m_playrec.setPlaybackAudioDevice(namePBDev);
 }
 
@@ -122,8 +115,17 @@ void MainWindow::playbackDeviceHasChanged(QIODevice *stream, QAudioDeviceInfo de
     QString _msg;
     _msg.sprintf("%08p", stream);
     ui->labelStream->setText(QString("%1").arg(_msg));
+}
 
+void MainWindow::startPressed() {
+    int position=ui->sliderStreamPosition->value();
+    qreal pos=m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum()));
+    m_playrec.start(pos);
+}
 
+void MainWindow::resetPlaybackFile() {
+    m_playbckFile.close();
+    m_playrec.setPlaybackStream(NULL);
 }
 
 void MainWindow::faderPositionHasChanged(int position)

@@ -25,12 +25,9 @@
     </property>
     <layout class="QVBoxLayout" name="centralWidgetLayout">
      <item>
-      <widget class="QFrame" name="framePlayback">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
+      <widget class="QGroupBox" name="groupBoxPlayback">
+       <property name="title">
+        <string>Stream/Device selection</string>
        </property>
        <widget class="QWidget" name="verticalLayoutWidget_2">
         <property name="geometry">
@@ -53,16 +50,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButtonResetPlayback">
+          <widget class="QPushButton" name="pushButtonResetStream">
            <property name="text">
-            <string>Reset Playback</string>
+            <string>Reset Stream</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="pushButtonChangeFormat">
            <property name="text">
-            <string>Change format</string>
+            <string>Change format (NOT YET IMPLEMENTED)</string>
            </property>
           </widget>
          </item>
@@ -71,12 +68,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="frameControls">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
+      <widget class="QGroupBox" name="groupBoxControls">
+       <property name="title">
+        <string>Device Controls</string>
        </property>
        <widget class="QWidget" name="gridLayoutWidget">
         <property name="geometry">
@@ -105,7 +99,7 @@
          <item row="0" column="3">
           <widget class="QPushButton" name="pushButtonResetALL">
            <property name="text">
-            <string>Reset play/rec</string>
+            <string>Reset Device</string>
            </property>
           </widget>
          </item>
@@ -154,12 +148,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="framePlaybackInfo">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
+      <widget class="QGroupBox" name="groupBoxPlaybackInfo">
+       <property name="title">
+        <string>Device Information</string>
        </property>
        <widget class="QWidget" name="gridLayoutWidget_2">
         <property name="geometry">
@@ -218,12 +209,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="frameMessage">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
+      <widget class="QGroupBox" name="groupBoxMessage">
+       <property name="title">
+        <string>Message</string>
        </property>
        <widget class="QWidget" name="verticalLayoutWidget_3">
         <property name="geometry">

@@ -55,6 +55,7 @@ public slots:
         quint64 sample=static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
         start(sample);
     }
+
     void stop();
     void pause(bool pause);
     void setPlaybackPosition(quint64 sample); //in sample
