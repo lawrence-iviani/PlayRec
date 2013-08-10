@@ -11,3 +11,15 @@ Makefile
 ui_mainwindow.h
 
 *.autosave
+
+PlayRec.pro
+
+PlayRecLib/._playrec_global.h
+
+PlayRecLib/._playrecutils.cpp
+
+PlayRecLib/._playrecutils.h
+
+PlayRecLib/._rec.cpp
+
+PlayRecLib/._rec.h
