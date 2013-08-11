@@ -1,12 +1,21 @@
 #ifndef PLAYRECRETURNVALUE_H
 #define PLAYRECRETURNVALUE_H
 
+//-----------------------------------------------------------------------------
+// Macros
+//-----------------------------------------------------------------------------
+
+//Format a playrec retval message to  string
+#define PLAYREC_MESSAGE(result) QString("%1: --%2--").arg(PlayRecUtils::playrecReturnValueToString(result.status)).arg(result.message)
+
+//Define the OK value, should be used by any enumerator
+#define PLAYREC_RETVAL_OK 1
 
 //-----------------------------------------------------------------------------
 // Return Value Stuff
 //-----------------------------------------------------------------------------
 
-#define PLAYREC_RETVAL_OK 1
+
 
 /**
  * A structucre with the return value a class

@@ -40,9 +40,9 @@ void MainWindow::connectSignals() {
 
     //Connect audio controls
     connect(ui->pushButtonPlay,SIGNAL(pressed()),this,SLOT(startPressed()));
-    connect(ui->pushButtonStop,SIGNAL(pressed()),&m_playrec,SLOT(stop()));
+    connect(ui->pushButtonStop,SIGNAL(pressed()),this,SLOT(stopPressed()));//&m_playrec,SLOT(stop()));
     connect(ui->pushButtonPause,SIGNAL(pressed()),this,SLOT(pauseToggled()));
-    connect(ui->pushButtonResetALL,SIGNAL(pressed()),&m_playrec,SLOT(resetAllStream()));
+    connect(ui->pushButtonResetALL,SIGNAL(pressed()),this,SLOT(resetALLPressed()));//&m_playrec,SLOT(resetAllStream()));
     connect(&m_playrec,SIGNAL(playbackPositionChanged(qreal)),this,SLOT(playbackPositionHasChanged(qreal)));
     connect(ui->sliderStreamPosition,SIGNAL(sliderMoved(int)),this,SLOT(faderPositionHasChanged(int)));
 
@@ -58,7 +58,11 @@ void MainWindow::playbackPositionHasChanged(qreal time) {
 }
 
 void MainWindow::comboBoxPlaybackHasChanged(QString namePBDev) {
-    m_playrec.setPlaybackAudioDevice(namePBDev);
+    if (m_playrec.setPlaybackAudioDevice(namePBDev)) {
+        ui->messageText->append(QString("Playback device selection was fine"));
+    } else {
+        ui->messageText->append(QString("Playback device selection issue. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
 }
 
 void MainWindow::openNewPlaybackFile() {
@@ -72,11 +76,14 @@ void MainWindow::openNewPlaybackFile() {
     bool _isOpen=m_playbckFile.open(QIODevice::ReadOnly);
 
     if ( _isOpen) {
-        //m_playbckFile.seek(48); //Length of the wav header
-        m_playrec.setPlaybackStream(&m_playbckFile);
-        ui->sliderStreamPosition->setRange( 0,static_cast<int>(m_playrec.playbackTimeLength() ));
+        if (m_playrec.setPlaybackStream(&m_playbckFile)) {
+            ui->sliderStreamPosition->setRange( 0,static_cast<int>(m_playrec.playbackTimeLength() ));
+            ui->messageText->append(QString("Open file: %1 and set as stream").arg(fileName));
+        } else {
+            ui->messageText->append(QString("Fail to set as stream file %1. Due to %2").arg(fileName).arg(m_playrec.lastOperationMessage()));
+        }
     } else  {
-        qDebug() << Q_FUNC_INFO << "Can''t open file:" << fileName;
+        ui->messageText->append(QString("Can't open file: %1").arg(fileName));
     }
 }
 
@@ -120,21 +127,53 @@ void MainWindow::playbackDeviceHasChanged(QIODevice *stream, QAudioDeviceInfo de
 void MainWindow::startPressed() {
     int position=ui->sliderStreamPosition->value();
     qreal pos=m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum()));
-    m_playrec.start(pos);
+    if (m_playrec.start(pos)) {
+        ui->messageText->append(QString("Start was fine"));
+    } else {
+        ui->messageText->append(QString("Start issue. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
+}
+
+void MainWindow::stopPressed() {
+    if (m_playrec.stop()) {
+        ui->messageText->append(QString("Stop was fine"));
+    } else {
+        ui->messageText->append(QString("Stop issue. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
+}
+
+void MainWindow::resetALLPressed() {
+    if (m_playrec.resetAllStream()) {
+        ui->messageText->append(QString("Reset ALL  was fine"));
+    } else {
+        ui->messageText->append(QString("Reset ALL  issue. Due to ").arg(m_playrec.lastOperationMessage()));
+    }
 }
 
 void MainWindow::resetPlaybackFile() {
     m_playbckFile.close();
-    m_playrec.setPlaybackStream(NULL);
+    if (m_playrec.setPlaybackStream(NULL)) {
+        ui->messageText->append(QString("Reset playbck stream was fine"));
+    } else {
+        ui->messageText->append(QString("Reset playbck stream issue. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
 }
 
 void MainWindow::faderPositionHasChanged(int position)
 {
     qreal pos=m_playrec.playbackTimeLength()* (static_cast<qreal>(position)/static_cast<qreal>(ui->sliderStreamPosition->maximum()));
-    m_playrec.setPlaybackPosition(pos);
+    if (m_playrec.setPlaybackPosition(pos)) {
+        ui->messageText->append(QString("Position change was fine"));
+    } else {
+        ui->messageText->append(QString("Position change issue. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
 }
 
 void MainWindow::pauseToggled() {
     m_pauseSelect=!m_pauseSelect;
-    m_playrec.pause(m_pauseSelect);
+    if (m_playrec.pause(m_pauseSelect)) {
+        ui->messageText->append(QString("Pause/unpause was fine"));
+    } else {
+        ui->messageText->append(QString("Pause/unpause. Due to %1").arg(m_playrec.lastOperationMessage()));
+    }
 }

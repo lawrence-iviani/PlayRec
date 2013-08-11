@@ -36,6 +36,8 @@ private slots:
     void pauseToggled();
     void resetPlaybackFile();
     void startPressed();
+    void stopPressed();
+    void resetALLPressed();
 
 
     //Get the  playback time (sec.) form playrec and update the UI

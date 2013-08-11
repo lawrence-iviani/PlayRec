@@ -7,8 +7,6 @@
 #include <QObject>
 
 
-
-
 /**
  * @brief The PlayRec class
  * The class defines an interface for play, rec and play&rec. It hides the below layer of recording and playback
@@ -34,6 +32,12 @@ public:
     const quint64 recSamplePosition() {return 0;} //TODO
     const qreal recTimePosition() {return 0.0;} //TODO
 
+    /**
+     * @brief lastOperationMessage Return the message from the last operation. Use joint together with the return bool of most function
+     * @return
+     */
+    const QString lastOperationMessage() {return m_lastMessage;}
+
     static QMap<QString, QAudioDeviceInfo> availablePlaybackDevices();
     static QMap<QString, QAudioDeviceInfo> availableRecordingDevices();
 
@@ -48,38 +52,38 @@ public slots:
      * @brief start Start the playback at sample 0 (header should be skipped)
      * @param sample
      */
-    void start(const quint64 sample=0);
+    bool start(const quint64 sample=0);
 
     /**
      * @brief startAtTimePosition convert the time position in samples
      * @param timePosition
      */
-    void startAtTimePosition(const qreal timePosition) {
+    bool startAtTimePosition(const qreal timePosition) {
         quint64 sample=static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
         start(sample);
     }
 
-    void stop();
-    void pause(bool pause);
-    void setPlaybackPosition(quint64 sample); //in sample
-    void setPlaybackPosition(qreal timePosition); //in seconds
-    void setAudioMode(PlayRecMode mode) {}//TODO PROPERTY!!
+    bool stop();
+    bool pause(bool pause);
+    bool setPlaybackPosition(quint64 sample); //in sample
+    bool setPlaybackPosition(qreal timePosition); //in seconds
+    bool setAudioMode(PlayRecMode mode) {}//TODO PROPERTY!!
 
     //TODO: solo un'idea, intese come property... (QIODevice va cambiato con qualcosa di perszonalizzto tipo generico audiostream,
     // il problema del multicanale.......
     // in realta' la cosa si potrebbe anche gestire con semplici getRecord e getPlayback dove viene passata la classe. ma e' un po' piu' sporca..
     //Set file/generic stream
-    void setPlaybackStream(QIODevice * stream);
-    void setRecordingStream(QIODevice * stream) {}
+    bool setPlaybackStream(QIODevice * stream);
+    bool setRecordingStream(QIODevice * stream) {return true;}
 
     //Set the play/rec device, based on the sound card
-    void setPlaybackAudioDevice(const QString& deviceName);
-    void setRecordingAudioDevice(const QString& deviceName) {}
+    bool setPlaybackAudioDevice(const QString& deviceName);
+    bool setRecordingAudioDevice(const QString& deviceName) {return true;}
 
     //Reset, some or all device
-    void resetPlaybackStream();
-    void resetRecStream() {}
-    void resetAllStream() {resetPlaybackStream(); resetRecStream();}
+    bool resetPlaybackStream();
+    bool resetRecStream() {}
+    bool resetAllStream() {resetPlaybackStream(); resetRecStream();}
 
     //questo possono essere considerate proprieta', per cui mancano tutti i get e i notify change
 
@@ -93,12 +97,16 @@ private:
     Play * m_play;
     Rec * m_rec;
     PlayRecMode m_audioMode;
+    QString  m_lastMessage;
 
     void connectSignals();
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device);//try to reuse previous format
-    void setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format) {}
-    void setRecordingAudioDevice(const QAudioDeviceInfo device) {}//try to reuse previous format
-    void setRecordingAudioDevice(const QAudioDeviceInfo device,const QAudioFormat& format) {}
+    bool setPlaybackAudioDevice(const QAudioDeviceInfo& device);//try to reuse previous format
+    bool setPlaybackAudioDevice(const QAudioDeviceInfo& device, const QAudioFormat& format) {return true;}
+    bool setRecordingAudioDevice(const QAudioDeviceInfo device) {return true;}//try to reuse previous format
+    bool setRecordingAudioDevice(const QAudioDeviceInfo device,const QAudioFormat& format) {return true;}
+
+    //Utilit to use at the end of function
+    inline bool  ef(const QString& message, const PLAYREC_RETVAL& retval);
 
 private slots:
     //If playback position changed this slot get the sample and emit playbackPositionChanged in seconds.

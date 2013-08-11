@@ -11,6 +11,7 @@ PlayRec::PlayRec(QObject *parent) :
     m_rec(NULL),
     m_audioMode(PlayRec::PLAY)
 {
+    m_lastMessage="";
     //init playback
     m_play=new Play(parent);
 
@@ -43,6 +44,16 @@ void PlayRec::connectSignals()
 
 }
 
+bool PlayRec::ef(const QString& message,const PLAYREC_RETVAL& retval) {
+    if (retval.status!=PLAY_OK) {
+        m_lastMessage=PLAYREC_MESSAGE(retval);
+        if (!message.isEmpty())
+            qDebug() << message << m_lastMessage;
+        return false;
+    } else {
+        return true;
+    }
+}
 
 //-----------------------------------------------------------------------------
 // Public methods
@@ -52,8 +63,9 @@ void PlayRec::connectSignals()
 //-----------------------------------------------------------------------------
 // Public slots
 //-----------------------------------------------------------------------------
-void PlayRec::start(const quint64 sample)
+bool PlayRec::start(const quint64 sample)
 {
+    m_lastMessage="";
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
         case PLAY:
@@ -68,11 +80,10 @@ void PlayRec::start(const quint64 sample)
             result=m_play->start(sample);
             break;
     }
-    if (result.status!=PLAY_OK)
-        qDebug() << Q_FUNC_INFO << " operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::stop()
+bool PlayRec::stop()
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
@@ -88,12 +99,10 @@ void PlayRec::stop()
             result=m_play->stop();
             break;
     }
-    if (result.status!=PLAY_OK)
-        qDebug() << Q_FUNC_INFO << " operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::pause(bool pause)
+bool PlayRec::pause(bool pause)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     switch (m_audioMode) {
@@ -115,65 +124,63 @@ void PlayRec::pause(bool pause)
                 result=m_play->unpause();
             break;
     }
-    if (result.status!=PLAY_OK)
-        qDebug() << Q_FUNC_INFO << " operation error,"<< (pause ? "pausing" : "unpausing")  << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::resetPlaybackStream() {
+bool PlayRec::resetPlaybackStream() {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     result=m_play->resetDevice();
-    if (result.status!=PLAY_OK)
-        qDebug() << Q_FUNC_INFO << " operation error resetting playback," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::setPlaybackStream(QIODevice * stream)
+bool PlayRec::setPlaybackStream(QIODevice * stream)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
 
     result=m_play->changeAudioStream(stream);
     if (result.status!=PLAY_OK) {
-        qDebug() << Q_FUNC_INFO << "RESET operation error," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-    }
+        m_lastMessage=PLAYREC_MESSAGE(result);
+        qDebug() << Q_FUNC_INFO << " Start  error," << m_lastMessage;
+        return false;
+    } else
+        return true;
 }
 
-void PlayRec::setPlaybackPosition(quint64 sample)
+bool PlayRec::setPlaybackPosition(quint64 sample)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
     result=m_play->setPosition(sample);
-    if (result.status!=PLAY_OK) {
-        qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-    }
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::setPlaybackPosition(qreal timePosition)
+bool PlayRec::setPlaybackPosition(qreal timePosition)
 {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
 
     quint64 sample= static_cast<quint64> (timePosition*(static_cast<qreal> (m_play->audioFormat().sampleRate())));
     result=m_play->setPosition(sample);
-    if (result.status!=PLAY_OK) {
-        qDebug() << Q_FUNC_INFO << "setPosition fail," << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-    }
+    return ef(Q_FUNC_INFO,result);
 }
 
-void PlayRec::setPlaybackAudioDevice(const QString &deviceName) {
+bool PlayRec::setPlaybackAudioDevice(const QString &deviceName) {
+    bool retval=false;
+    m_lastMessage=QString("Playaback %1 device don't found").arg(deviceName);
+    bool found=false;
     foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
         if(deviceInfo.deviceName()==deviceName) {
-            setPlaybackAudioDevice(deviceInfo);
+            found=true;
+            retval=setPlaybackAudioDevice(deviceInfo);
             break;
         }
     }
-
+    return retval;
 }
 
-void PlayRec::setPlaybackAudioDevice(const QAudioDeviceInfo &device) {
+bool PlayRec::setPlaybackAudioDevice(const QAudioDeviceInfo &device) {
     PLAYREC_RETVAL result=PLAYREC_INIT_OK_RETVAL();
 
     result=m_play->changeAudioInterface(device,device.preferredFormat());
-    if (result.status!=PLAY_OK ) {
-        qDebug() << Q_FUNC_INFO << "Can't select interface "<< device.deviceName() << " with format " << PlayRecUtils::formatToString(device.preferredFormat())<<" ERROR:" << PlayRecUtils::playrecReturnValueToString(result.status)<< " - " << result.message;
-        result=m_play->changeAudioInterface(QAudioDeviceInfo::defaultOutputDevice());
-    }
+    return ef(Q_FUNC_INFO,result);
 }
 
 //-----------------------------------------------------------------------------
