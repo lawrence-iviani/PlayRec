@@ -229,10 +229,12 @@ const PLAYREC_RETVAL Play::start(const quint64 startSample)
     //EVERY STREAM MUST SKIP ITS HEADER. TODO!!!
     qDebug() << Q_FUNC_INFO << "SKIPPING 48 BYTES HEADER FOR DEBUG PURPOSE";
     quint64 bytesPosition=qMin(PlayRecUtils::convertSampleToByte(startSample,m_audioOutput->format())+WAVEFILE_HEADER,m_audioStream->size() );
-    m_audioStream->read(bytesPosition);
-    setPreviousBytePosition(bytesPosition);
+    //m_audioStream->seek(bytesPosition);
+    //setPreviousBytePosition(bytesPosition);
     //END TODO
             m_audioOutput->start(m_audioStream);
+            m_audioStream->seek(bytesPosition);
+            setPreviousBytePosition(bytesPosition);
             errMsg=PlayRecUtils::decodeInternalAudioErrorToString(m_audioOutput->error());
             if (!errMsg.isEmpty()) {
                 qDebug() << Q_FUNC_INFO << errMsg;
@@ -452,7 +454,6 @@ const PLAYREC_RETVAL Play::initDevice( const QAudioDeviceInfo &outputDevice, con
                   << " finally " <<  PlayRecUtils::formatToString(_definitiveFormat) ;
         emit audioFormatChanged(_definitiveFormat);
     }
-
 
     //opening IO audio output
     m_audioOutput = new QAudioOutput(outputDevice, _definitiveFormat, this);

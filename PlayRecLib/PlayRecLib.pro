@@ -23,6 +23,7 @@ HEADERS += playrec_global.h \
     playrec.h\
     rec.h \
     play.h \
+    PlayRecReturnValue.h
 
 
 

@@ -6,6 +6,9 @@
 #include "rec.h"
 #include <QObject>
 
+
+
+
 /**
  * @brief The PlayRec class
  * The class defines an interface for play, rec and play&rec. It hides the below layer of recording and playback

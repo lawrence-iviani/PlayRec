@@ -3,9 +3,26 @@
 
 #include  "playrec_global.h"
 #include "playrecutils.h"
+#include "PlayRecReturnValue.h"
+
 
 //THIS IS AS FIRST DEVEL. THE HEADER WILL BE RETURNED BY THE STREAM ITSELF!!
 #define WAVEFILE_HEADER 48 //the number of bytes of a wavfile
+
+// The enum of error types that a PLAY class can return
+typedef enum {
+    PLAY_OK = PLAYREC_RETVAL_OK,
+    PLAY_FAIL = -1,
+    PLAY_AUDIO_OUTPUT_NOT_READY= -2,
+    PLAY_FUNCTION_NOT_IMPLEMENTED= -3,
+    PLAY_ALREADY_PAUSED = -4,
+    PLAY_ALREADY_PLAYING = -5,
+    PLAY_ALREADY_STOPPED = -6,
+    PLAY_CANT_INIT_AUDIO = -7,
+    PLAY_CANT_INIT_STREAM = -8,
+    PLAY_STREAM_NOT_INIT = -9
+    //other, can't change interface, streamerror ecc
+} PLAY_RETURNVALUE;
 
 /**
  * @brief The Play class allows to reproduce a byte stream from any QIODevice. This class simplify the manegment of the sound card,
@@ -24,6 +41,11 @@ public:
     virtual ~Play();
 
     const int status() {return m_status;}
+
+    /**
+     * @brief position return the actual position in samples
+     * @return
+     */
     const quint64 position();
     const QAudioFormat audioFormat() {return (m_audioOutput ? m_audioOutput->format() : QAudioFormat());}
     const QAudioDeviceInfo audioInterface() {return (m_audioOutput ? m_audioOutputInfo : QAudioDeviceInfo());}
@@ -31,7 +53,7 @@ public:
 
 
     /**
-     * @brief streamLength The stream length (if set) in samples
+     * @brief streamLength The stream length (if set) in samples (this should be done by the class itself)
      * @return Number of samples
      */
     const quint64 streamLength();
